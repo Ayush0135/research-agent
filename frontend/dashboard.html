@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | Surefact</title>
+  <link rel="stylesheet" href="/static/modern-ui.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });</script>
+  <style>
+    /* ── Announcement Ticker ── */
+    @keyframes tickerScroll {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    @keyframes slideDown {
+      from { opacity:0; transform:translateY(-10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .ticker-wrap {
+      animation: slideDown 0.4s ease;
+      margin-bottom: 20px;
+    }
+    .ticker-container {
+      display: flex;
+      align-items: center;
+      border-radius: 12px;
+      overflow: hidden;
+      height: 48px;
+      border: 1px solid;
+      position: relative;
+    }
+    .ticker-container[data-style="info"]    { background:rgba(56,189,248,0.07);  border-color:rgba(56,189,248,0.35);  }
+    .ticker-container[data-style="promo"]   { background:rgba(139,92,246,0.07);  border-color:rgba(139,92,246,0.35); }
+    .ticker-container[data-style="warning"] { background:rgba(245,158,11,0.07); border-color:rgba(245,158,11,0.35); }
+    .ticker-container[data-style="success"] { background:rgba(16,185,129,0.07); border-color:rgba(16,185,129,0.35); }
+    .ticker-label {
+      padding: 0 14px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      border-right: 1px solid currentColor;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.9;
+    }
+    .ticker-container[data-style="info"]    .ticker-label { color:#38bdf8; border-color:rgba(56,189,248,0.3);  }
+    .ticker-container[data-style="promo"]   .ticker-label { color:#a78bfa; border-color:rgba(139,92,246,0.3); }
+    .ticker-container[data-style="warning"] .ticker-label { color:#f59e0b; border-color:rgba(245,158,11,0.3); }
+    .ticker-container[data-style="success"] .ticker-label { color:#10b981; border-color:rgba(16,185,129,0.3); }
+    .ticker-track-wrap {
+      flex: 1;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .ticker-track {
+      display: inline-flex;
+      white-space: nowrap;
+      animation: tickerScroll var(--ticker-dur, 28s) linear infinite;
+      will-change: transform;
+    }
+    .ticker-track span {
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0 60px 0 20px;
+    }
+    .ticker-container[data-style="info"]    .ticker-track span { color:#e0f2fe; }
+    .ticker-container[data-style="promo"]   .ticker-track span { color:#ede9fe; }
+    .ticker-container[data-style="warning"] .ticker-track span { color:#fef3c7; }
+    .ticker-container[data-style="success"] .ticker-track span { color:#d1fae5; }
+    .ticker-close {
+      padding: 0 14px;
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      opacity: 0.45;
+      color: white;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+    }
+    .ticker-close:hover { opacity: 0.9; }
+
+    /* ── Discount & Sales UI ── */
+    .sale-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #10b981;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+      z-index: 2;
+      animation: pulse 2s infinite;
+    }
+    .original-price {
+      text-decoration: line-through;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      margin-right: 6px;
+      opacity: 0.7;
+    }
+    .discount-label {
+      background: rgba(16,185,129,0.1);
+      color: #10b981;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      border: 1px dashed rgba(16,185,129,0.3);
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    .sale-indicator {
+      display: inline-flex;
+      align-items: center;
+      background: #10b981;
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      animation: pulse 2s infinite;
+      box-shadow: 0 0 10px rgba(16,185,129,0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Navbar -->
+    <nav>
+      <div class="logo" onclick="window.location.reload()">
+        <img src="/static/surefact_logo.png" style="height: 24px; border-radius: 4px;" alt="Surefact" /> Surefact
+      </div>
+
+      <div class="nav-right">
+        <div class="credit-badge">
+             ⚡ <span id="credit-count">...</span> Credits
+        </div>
+        
+        <!-- Notifications Hub -->
+        <div class="notif-wrapper">
+            <button class="notif-btn" id="notif-toggle" onclick="toggleNotifs()">
+              🔔<span id="notif-badge" style="display:none">0</span>
+            </button>
+            <div id="notif-dropdown" class="dropdown-content">
+                <h4 style="margin:0 0 10px; font-size:0.85rem; color:var(--text-dim); text-transform:uppercase;">Updates & Support</h4>
+                <div id="notif-list" style="max-height:300px; overflow-y:auto; font-size:0.85rem;">
+                   <div style="text-align:center; padding:20px; color:var(--text-dim);">No new notifications.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Account Group -->
+        <div class="account-btn" onclick="openProfileModal()">
+          <div class="account-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
+          <span class="nav-username" id="nav-username">Student</span>
+        </div>
+
+        <button class="btn btn-ghost" onclick="openSupportModal()" style="height:44px; padding:0 16px;">Help</button>
+        <button class="btn btn-ghost" onclick="logout()" style="height:44px; padding:0 16px;">Sign out</button>
+      </div>
+    </nav>
+
+    <div id="main-screen" class="active">
+      <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="plan-card">
+            <div class="plan-name" id="plan-name">Free Plan</div>
+            <div class="plan-credits-big" id="plan-credits">—</div>
+            <div class="plan-label-sm">credits remaining</div>
+            <button class="btn btn-primary" style="width:100%; margin-top:20px; justify-content:center; height:48px;" onclick="openPaymentModal()">Upgrade Plan</button>
+            <button class="btn btn-ghost" id="btn-billing" style="width:100%; margin-top:10px; display:none; justify-content:center; height:48px;" onclick="openRefundModal()">Billing History</button>
+          </div>
+          <div class="sidebar-title">Research History</div>
+          <div id="history-list">
+             <div style="padding:40px 20px; text-align:center; color:var(--text-dim); font-size:0.85rem;">No research yet.</div>
+          </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="content">
+          <!-- Announcement Ticker -->
+          <div id="ticker-wrap" class="ticker-wrap" style="display:none;">
+            <div class="ticker-container" id="ticker-container" data-style="info">
+              <div class="ticker-label" id="ticker-label">📢 LIVE</div>
+              <div class="ticker-track-wrap">
+                <div class="ticker-track" id="ticker-track">
+                  <span id="ticker-text-a"></span>
+                  <span id="ticker-text-b"></span>
+                </div>
+              </div>
+              <button class="ticker-close" onclick="closeTicker()" title="Dismiss">✕</button>
+            </div>
+          </div>
+
+        <div class="search-panel">
+            <h2 class="search-hero">What are you <span>researching</span> today?</h2>
+            <div class="search-row">
+               <div class="search-input-wrap">
+                 <input class="search-input" id="query-input" placeholder="e.g. Breakthroughs in quantum computing..." onkeydown="if(event.key==='Enter')startResearch()">
+               </div>
+               <select class="format-select" id="format-select">
+                <option value="detailed report">Detailed Report</option>
+                <option value="bullet point summary">Bullet Points</option>
+                <option value="executive summary">Executive Summary</option>
+                <option value="research paper">Research Paper</option>
+               </select>
+               <button class="btn btn-primary" id="research-btn" onclick="startResearch()" style="height:60px; padding:0 32px; font-size:1.1rem;">
+                  <span id="btn-text">Research</span>
+                  <div class="spinner" id="btn-spinner" style="display:none"></div>
+               </button>
+            </div>
+          </div>
+
+          <!-- Pipeline Progress -->
+          <div class="pipeline-panel">
+            <div class="pipeline-stages">
+              <div class="stage" id="stage-init"><div class="stage-dot">1</div><div class="stage-label">Init</div></div>
+              <div class="stage" id="stage-search"><div class="stage-dot">2</div><div class="stage-label">Search</div></div>
+              <div class="stage" id="stage-verify"><div class="stage-dot">3</div><div class="stage-label">Verify</div></div>
+              <div class="stage" id="stage-process"><div class="stage-dot">4</div><div class="stage-label">Context</div></div>
+              <div class="stage" id="stage-generate"><div class="stage-dot">5</div><div class="stage-label">Finalize</div></div>
+              <div class="stage" id="stage-done"><div class="stage-dot">✓</div><div class="stage-label">Done</div></div>
+            </div>
+          </div>
+
+          <!-- Status Indicator -->
+          <div class="status-bar">
+            <div class="status-dot" id="status-dot"></div>
+            <div id="status-text">Ready for new query.</div>
+          </div>
+
+          <!-- Research Results Layer -->
+          <div class="results-panel" id="results-panel">
+               <div class="empty-state">
+                  <div class="empty-icon">📂</div>
+                  <div class="empty-title">Ready when you are</div>
+                  <p style="margin-top:10px; max-width:400px; line-height:1.6; color:var(--text-dim);">Your research reports, citations, and analysis will appear here once you start a new research.</p>
+               </div>
+          </div>
+        </main>
+        </div>
+    </div>
+
+    <!-- Payment Modal (Add this before close of UI container or body) -->
+    <div class="modal-overlay" id="payment-modal">
+        <div class="modal" id="payment-modal-content">
+            <button class="modal-close" onclick="closePaymentModal()">✕</button>
+            <div class="modal-title">Upgrade Plan</div>
+            <p class="modal-sub" id="modal-sub">Choose a plan to get more research credits.</p>
+            
+            <div id="credit-warning" style="display:none; background:rgba(255,77,109,0.1); border:1px solid var(--danger); padding:16px; border-radius:12px; margin-bottom:20px; font-size:0.85rem; color:var(--danger); line-height:1.5;">
+                ⚠️ <strong>Credits Exhausted:</strong> You have used all your research sessions. Please upgrade to continue.
+            </div>
+
+            <!-- Step 1: Selection (rendered dynamically) -->
+            <div id="step-plans">
+                <div id="plan-grid-container" class="plan-grid">
+                    <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-dim);">Loading plans...</div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <div id="global-sale-announcement" style="display:none; padding:12px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:12px; color:#10b981; font-size:0.85rem; text-align:center; font-weight:600;">
+                        <!-- Sale text injected here -->
+                    </div>
+                    <div style="display:flex; gap:16px;">
+                        <button class="btn btn-ghost" style="flex:1; justify-content:center" onclick="closePaymentModal()">Cancel</button>
+                        <button class="btn btn-primary" style="flex:2; justify-content:center" id="btn-show-qr" onclick="showQRStep()" disabled>Pay &amp; Activate →</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: QR Payment -->
+            <div id="step-qr" style="display:none">
+                <div class="qr-box">
+                    <div class="qr-amount" id="qr-amount">₹49</div>
+                    <img id="qr-img" src="" alt="Payment QR">
+                    <div class="qr-upi-tag" id="qr-upi-tag">UPI: 9693932656@ptyes</div>
+                    <p class="qr-hint">Scan with any UPI app (GPay, PhonePe, etc.)<br>Then enter the <strong>Transaction ID (UTR)</strong> below.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Enter Transaction ID / UTR Number</label>
+                    <input type="text" class="form-input" id="utr-input" placeholder="e.g. 123456789012" oninput="this.value=this.value.replace(/[^0-9a-zA-Z]/g,'')">
+                    <div id="utr-error" style="color:var(--danger); font-size:0.75rem; margin-top:8px; display:none;"></div>
+                </div>
+
+                <div id="verify-status" class="verify-status" style="display:none"></div>
+
+                <div style="display:flex; gap:16px;">
+                    <button class="btn btn-ghost" style="flex:1; justify-content:center" onclick="backToPlanStep()">← Back</button>
+                    <button class="btn btn-primary" style="flex:2; justify-content:center" id="btn-verify" onclick="verifyPayment()">
+                        <span id="btn-verify-text">Verify & Activate</span>
+                        <div class="spinner" id="verify-spinner" style="display:none"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refund Modal -->
+    <div class="modal-overlay" id="refund-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeRefundModal()">✕</button>
+            <div class="modal-title">Billing History & Refunds</div>
+            <p class="modal-sub">View your past transactions or request a refund.</p>
+            
+            <div id="billing-history-list" style="max-height:250px; overflow-y:auto; margin-bottom:20px; border:1px solid var(--border); border-radius:8px; padding:10px;">
+                <div style="text-align:center; padding:20px; color:var(--text-dim); font-size:0.85rem;">No billing history found.</div>
+            </div>
+
+            <form id="refund-form" onsubmit="submitRefundRequest(event)">
+                <h4 style="margin-top:20px; margin-bottom:10px; font-size:1rem;">Request a Refund</h4>
+                <div class="form-group">
+                    <label class="form-label">Transaction ID (UTR)</label>
+                    <input type="text" class="form-input" id="refund-utr" placeholder="Enter full UTR" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason for Refund</label>
+                    <textarea id="refund-reason" class="form-input" rows="3" placeholder="Briefly explain why you're requesting a refund." required style="resize:none;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="refund-btn" style="width:100%; justify-content:center; height:48px;">Submit Refund Request</button>
+            </form>
+            <p id="refund-status" style="margin-top:16px; text-align:center; font-size:0.85rem; display:none;"></p>
+        </div>
+    </div>
+
+    <!-- Support Modal -->
+    <div class="modal-overlay" id="support-modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeSupportModal()">✕</button>
+            <div class="modal-title">Support & Help</div>
+            <p class="modal-sub">Need help with research, billing, or found a bug? Let us know.</p>
+            <form id="support-form" onsubmit="submitSupport(event)">
+                <div class="form-group">
+                    <label class="form-label">Subject</label>
+                    <select id="support-category" class="form-input" required>
+                        <option value="billing">Billing / Upgrade Issue</option>
+                        <option value="research">Research Accuracy / Error</option>
+                        <option value="account">Account Access</option>
+                        <option value="other">Other / General Feedback</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message</label>
+                    <textarea id="support-message" class="form-input" rows="4" placeholder="How can we help?" required style="resize:none;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="support-btn" style="width:100%; justify-content:center; height:48px;">Submit Request</button>
+            </form>
+            <p id="support-status" style="margin-top:16px; text-align:center; font-size:0.85rem; display:none;"></p>
+        </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeProfileModal()">✕</button>
+      <h2 style="margin-bottom:8px; font-size:1.5rem;">Student Profile</h2>
+      <p style="color:var(--text-muted); margin-bottom:30px; font-size:0.9rem;">Fill in your details to customize your research and reports.</p>
+      
+      <div id="profile-setup-notice" style="display:none; background:rgba(99, 102, 241, 0.1); border:1px solid var(--accent); padding:16px; border-radius:12px; margin-bottom:24px; font-size:0.85rem; color:var(--accent); line-height:1.5;">
+        👋 **Welcome!** Please complete your profile to continue. **Username is mandatory.**
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="prof-name" placeholder="E.g. Ayush Kumar">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Username (Mandatory)</label>
+        <input type="text" class="form-input" id="prof-username" placeholder="Choose a unique username">
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div class="form-group">
+          <label class="form-label">School / College</label>
+          <input type="text" class="form-input" id="prof-school" placeholder="Institute Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Enrollment #</label>
+          <input type="text" class="form-input" id="prof-enrollment" placeholder="Roll No / ID">
+        </div>
+      </div>
+
+      <p id="profile-error" style="color:var(--vibrant-red); font-size:0.85rem; display:none; margin-bottom:15px;"></p>
+
+      <button class="btn btn-primary" style="width:100%; justify-content:center; height:54px; margin-top:10px;" onclick="saveProfile()" id="save-profile-btn">
+        Save Profile Details
+      </button>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div id="toast" class="toast">Profile Updated Successfully!</div>
+
+  <script>
+    const API = window.location.origin;
+    let authToken = localStorage.getItem('ra_token');
+    let currentUser = JSON.parse(localStorage.getItem('ra_user'));
+    let activeWs = null, isResearching = false;
+
+    if (!authToken) window.location.href = '/login';
+
+    window.onload = () => {
+       initApp();
+    };
+
+    function initApp() {
+       if (currentUser && currentUser.username) {
+          document.getElementById('nav-username').textContent = currentUser.username;
+       }
+       refreshUserInfo();
+       loadHistory();
+       loadNotifications();
+       autoCheckProfile();
+       loadTicker();
+    }
+
+    async function checkAuthAndLoad() {
+        const token = localStorage.getItem('ra_token');
+        if (!token) { window.location.href = '/login.html'; return; }
+        
+        try {
+            // Fetch Profile & Config in parallel
+            const [profileRes, configRes] = await Promise.all([
+                fetch(`${API}/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API}/auth/config`) // New public endpoint for general config
+            ]);
+
+            if (profileRes.status === 401) { logout(); return; }
+            
+            const profile = await profileRes.json();
+            window._user = profile;
+            
+            if (!profile.full_name || !profile.institute) {
+                document.getElementById('profile-modal').style.display = 'flex';
+            }
+            
+            updateUI(profile);
+            loadHistory();
+
+            // Handle Broadcast
+            if (configRes.ok) {
+                const config = await configRes.json();
+                if (config.broadcast_message) {
+                    document.getElementById('broadcast-text').innerText = config.broadcast_message;
+                    document.getElementById('broadcast-banner').style.display = 'block';
+                }
+            }
+            
+        } catch (e) { console.error("Load error:", e); }
+    }
+
+    async function autoCheckProfile() {
+        const resp = await fetch(`${API}/auth/me?token=${authToken}`);
+        const data = await resp.json();
+        if (data && data.user_id) {
+            currentUser = { ...currentUser, ...data };
+            localStorage.setItem('ra_user', JSON.stringify(currentUser));
+            if (!data.username) openProfileModal(true);
+        }
+    }
+
+    function openProfileModal(isMandatory=false) {
+        if(isMandatory) document.getElementById('profile-setup-notice').style.display='block';
+        if(currentUser) {
+            document.getElementById('prof-name').value = currentUser.full_name || '';
+            document.getElementById('prof-username').value = currentUser.username || '';
+            document.getElementById('prof-school').value = currentUser.school_college || '';
+            document.getElementById('prof-enrollment').value = currentUser.enrollment_number || '';
+        }
+        document.getElementById('profile-modal').classList.add('open');
+    }
+    function closeProfileModal() { document.getElementById('profile-modal').classList.remove('open'); }
+
+    async function saveProfile() {
+        const payload = {
+            full_name: document.getElementById('prof-name').value.trim(),
+            username: document.getElementById('prof-username').value.trim(),
+            school_college: document.getElementById('prof-school').value.trim(),
+            enrollment_number: document.getElementById('prof-enrollment').value.trim()
+        };
+        if(!payload.username) {
+            const errEl = document.getElementById('profile-error');
+            errEl.textContent = "Username is mandatory.";
+            errEl.style.display = "block";
+            return;
+        }
+        const resp = await fetch(`${API}/auth/update-profile?token=${authToken}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const res = await resp.json();
+        if(res.success) {
+            currentUser = { ...currentUser, ...payload };
+            localStorage.setItem('ra_user', JSON.stringify(currentUser));
+            document.getElementById('nav-username').textContent = payload.username;
+            closeProfileModal();
+            showToast("Profile Updated!");
+        }
+    }
+
+    function logout() { localStorage.clear(); window.location.href = '/login'; }
+
+    // ── Announcement Ticker ──────────────────────────────────────────────────
+    async function loadTicker() {
+      try {
+        const res = await fetch(`${API}/auth/config`);
+        if (!res.ok) return;
+        const cfg = await res.json();
+
+        // Robust boolean check (handles "true", true, 1)
+        const isTickerEnabled = cfg.ticker_enabled === 'true' || cfg.ticker_enabled === true || cfg.ticker_enabled === 1;
+        if (!isTickerEnabled || !cfg.ticker_text) {
+          document.getElementById('ticker-wrap').style.display = 'none';
+          return;
+        }
+
+        const text      = cfg.ticker_text;
+        const style     = cfg.ticker_style  || 'info';
+        const speed     = cfg.ticker_speed  || 'normal';
+        const durMap    = { slow: '45s', normal: '28s', fast: '14s' };
+
+        const iconMap   = { info: '📢', promo: '🎉', warning: '⚠️', success: '✅' };
+        const labelMap  = { info: 'LIVE', promo: 'PROMO', warning: 'ALERT', success: 'UPDATE' };
+
+        // Double the text so the loop is seamless
+        document.getElementById('ticker-text-a').textContent = text + '\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0';
+        document.getElementById('ticker-text-b').textContent = text + '\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0';
+
+        const container = document.getElementById('ticker-container');
+        container.dataset.style = style;
+
+        document.getElementById('ticker-track').style.setProperty('--ticker-dur', durMap[speed] || '28s');
+        document.getElementById('ticker-label').innerHTML = `${iconMap[style] || '📢'} ${labelMap[style] || 'LIVE'}`;
+
+        document.getElementById('ticker-wrap').style.display = 'block';
+      } catch(e) { /* silent fail */ }
+    }
+
+    function closeTicker() {
+      const el = document.getElementById('ticker-wrap');
+      el.style.opacity = '0';
+      el.style.transition = 'opacity 0.3s';
+      setTimeout(() => el.style.display = 'none', 300);
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    function showToast(m) { const t = document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000); }
+    function toggleNotifs() { document.getElementById('notif-dropdown').classList.toggle('show'); }
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    async function refreshUserInfo() {
+        try {
+            const res = await fetch(`${API}/auth/me?token=${authToken}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            // Update credits in UI
+            document.getElementById('credit-count').textContent = data.credits_remaining || 0;
+            document.getElementById('plan-name').textContent = (data.plan || 'Free').toUpperCase() + ' PLAN';
+            document.getElementById('plan-credits').textContent = data.credits_remaining || 0;
+            
+            // Poll notifications
+            loadNotifications();
+            if (data.plan !== 'free') document.getElementById('btn-billing').style.display = 'block';
+        } catch(e) {
+            if (e.message === '401') {
+                const refreshed = await refreshToken();
+                if (refreshed) return refreshUserInfo();
+            }
+        }
+    }
+
+    async function refreshToken() {
+        const rt = localStorage.getItem('ra_refresh_token');
+        if (!rt) return false; 
+        try {
+            const resp = await fetch(`${API}/auth/refresh?refresh_token=${rt}`, { method: 'POST' });
+            if (!resp.ok) {
+                if (resp.status === 401) { logout(); }
+                return false;
+            }
+            const data = await resp.json();
+            if (data.access_token) {
+                authToken = data.access_token;
+                localStorage.setItem('ra_token', data.access_token);
+                if (data.refresh_token) localStorage.setItem('ra_refresh_token', data.refresh_token);
+                console.log("🔄 Session refreshed successfully.");
+                return true;
+            }
+        } catch (e) { console.error("Refresh error:", e); }
+        return false;
+    }
+
+    // Periodic Background Refresh (every 45 mins)
+    setInterval(async () => {
+        if (localStorage.getItem('ra_refresh_token')) {
+            await refreshToken();
+        }
+    }, 45 * 60 * 1000);
+
+    async function loadHistory() {
+        try {
+            const res = await fetch(`${API}/history`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (!res.ok) return;
+            const items = await res.json();
+            const el = document.getElementById('history-list');
+            if (!items.length) { el.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--text-dim); font-size:0.85rem;">No research yet.</div>'; return; }
+            el.innerHTML = items.map(item => `
+                <div class="history-item" onclick="showStaticResult('${item.id}')">
+                   <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(item.query)}</div>
+                   <div style="font-size:0.7rem; margin-top:4px; opacity:0.6;">${item.format}</div>
+                </div>`).join('');
+            window._historyItems = items;
+        } catch(e) {}
+    }
+
+    async function showStaticResult(id) {
+        const item = window._historyItems.find(i => i.id == id);
+        if(item) {
+            renderResult(item.query, item.result);
+        }
+    }
+
+    function renderResult(query, result, dlUrl=null, timings=null, totalTime=null) {
+        let timingHtml = '';
+        if (timings && totalTime) {
+            const stages = [
+                ['Search', timings.search],
+                ['Verify', timings.verify],
+                ['Process', timings.process],
+                ['Rank', timings.rank],
+                ['Generate', timings.generate]
+            ].filter(([, v]) => v > 0);
+            
+            const chips = stages.map(([label, val]) =>
+                `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border-color);font-size:.74rem;color:var(--text-dim)">
+                    <span style="color:var(--text-main);font-weight:600">${label}</span>${val < 1 ? (val * 1000).toFixed(0) + 'ms' : val.toFixed(1) + 's'}
+                </span>`
+            ).join('');
+            
+            timingHtml = `
+                <div style="padding:12px 28px; border-top:1px solid var(--border-color); display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:rgba(0,0,0,0.2)">
+                    <span style="font-size:0.75rem; color:var(--text-dim); margin-right:4px">⏱ Total: <strong style="color:var(--accent)">${totalTime}s</strong></span>
+                    ${chips}
+                </div>`;
+        }
+
+        document.getElementById('results-panel').innerHTML = `
+            <div class="result-card">
+                <div class="result-header">
+                    <div class="result-title">✦ ${esc(query)}</div>
+                    <div class="result-actions" style="display:flex; gap:10px;">
+                        <div class="dropdown" style="position:relative;">
+                            <button class="btn btn-primary" style="font-size:0.8rem; padding:6px 14px" onclick="toggleDownloadMenu()">⬇ Download As ▼</button>
+                            <div id="download-menu" class="dropdown-content" style="position:absolute; right:0; top:100%; width:160px; background:var(--bg-surface); border:1px solid var(--accent); border-radius:8px; display:none; z-index:100; box-shadow:0 10px 40px rgba(0,0,0,0.6);">
+                                <button onclick="downloadReport('pdf')" style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; color:white; cursor:pointer;">📄 PDF Document</button>
+                                <button onclick="downloadReport('docx')" style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; color:white; cursor:pointer;">📝 Word (.docx)</button>
+                                <button onclick="downloadReport('csv')" style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; color:white; cursor:pointer;">📊 Data (.csv)</button>
+                                <button onclick="downloadReport('md')" style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; color:white; cursor:pointer;">⬇ Markdown (.md)</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-ghost" style="font-size:0.8rem; padding:6px 14px" onclick="copyResult()">⎘ Copy</button>
+                    </div>
+                </div>
+                <div class="result-body" id="result-content">
+                    ${mdToHtml(result || '')}
+                </div>
+                ${timingHtml}
+            </div>`;
+        
+        window._lastResult = result;
+        window._lastPdfUrl = dlUrl;
+        setTimeout(() => { if(window.mermaid) mermaid.run({ nodes: document.querySelectorAll('.mermaid') }); }, 200);
+    }
+
+    function toggleDownloadMenu() {
+        document.getElementById('download-menu').classList.toggle('show');
+    }
+
+    function downloadReport(format) {
+        if (!window._lastResult) return;
+        const timestamp = new Date().getTime();
+        const base = `research_${timestamp}`;
+        const el = document.getElementById('result-content');
+
+        if (!el) { showToast("No report content found."); return; }
+
+        if (format === 'md') saveBlob(window._lastResult, `${base}.md`, 'text/markdown');
+        else if (format === 'pdf') {
+            if (window._lastPdfUrl) {
+                showToast("Downloading Authentic Academic PDF...");
+                window.open(window._lastPdfUrl, '_blank');
+                toggleDownloadMenu();
+                return;
+            }
+            showToast("Generating PDF... please wait.");
+            
+            // Clone element for a clean snapshot (avoiding flexbox/scroll issues)
+            const clone = el.cloneNode(true);
+            clone.style.padding = "40px";
+            clone.style.background = "white";
+            clone.style.color = "black";
+            // Ensure child headers/text are also black for printing
+            clone.querySelectorAll('*').forEach(n => {
+                n.style.color = "black";
+                if(n.tagName.startsWith('H')) n.style.color = "indigo";
+            });
+
+            const opt = { 
+                margin: 5, 
+                filename: `${base}.pdf`, 
+                image: { type: 'jpeg', quality: 0.98 }, 
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0
+                }, 
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+            };
+            
+            html2pdf().set(opt).from(clone).save().then(() => {
+                showToast("PDF Downloaded successfully!");
+            });
+        }
+        else if (format === 'docx') {
+            const h = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body>";
+            const f = "</body></html>";
+            saveBlob(h + el.innerHTML + f, `${base}.doc`, 'application/msword');
+        }
+        else if (format === 'csv') {
+            const table = el.querySelector('table');
+            if(table) {
+                let csv = [];
+                table.querySelectorAll('tr').forEach(r => csv.push(Array.from(r.querySelectorAll('td,th')).map(c => `"${c.innerText.replace(/"/g, '""')}"`).join(',')));
+                saveBlob(csv.join('\n'), `${base}.csv`, 'text/csv');
+            } else showToast("No table found for CSV.");
+        }
+        
+        // Auto-close menu
+        toggleDownloadMenu();
+    }
+
+    function saveBlob(c, f, t) {
+        const b = new Blob([c], { type: t }), u = URL.createObjectURL(b), a = document.createElement('a');
+        a.href = u; a.download = f; a.click(); URL.revokeObjectURL(u);
+    }
+
+    function copyResult() {
+        if(!window._lastResult) return;
+        navigator.clipboard.writeText(window._lastResult).then(() => showToast("Copied to clipboard!"));
+    }
+
+    // Full Markdown Engine
+    function mdToHtml(raw) {
+        if (!raw) return '';
+        let t = raw;
+        // Mermaid
+        t = t.replace(/```mermaid([\s\S]+?)```/g, (_, code) => `<div class="mermaid">${code.trim()}</div>`);
+        // Code Blocks
+        t = t.replace(/```(\w+)?([\s\S]+?)```/g, '<pre><code>$2</code></pre>');
+        // Escape helper
+        const esc2 = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Tables
+        t = t.replace(/(?:^|\n)((?:\|?.+\|?)+)\n((?:\|? ?[-: ]+[-| :]*\|? ?)+)\n((?:(?:\|?.+\|?)+\n?)+)/gm, (m, h, s, b) => {
+            const parse = r => { let x = r.trim(); if(x.startsWith('|')) x=x.slice(1); if(x.endsWith('|')) x=x.slice(0,-1); return x.split('|').map(c => c.trim()); };
+            const headers = parse(h).map(c => `<th>${esc2(c)}</th>`).join('');
+            const rows = b.trim().split('\n').map(r => '<tr>' + parse(r).map(c => `<td>${inlineFormat(c)}</td>`).join('') + '</tr>').join('');
+            return `\n<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>\n`;
+        });
+
+        const lines = t.split('\n');
+        const out = [];
+        let inUl = false, inOl = false;
+
+        for (let l of lines) {
+            if (l.startsWith('<table') || l.startsWith('<div class="mermaid"') || l.startsWith('<pre')) { out.push(l); continue; }
+            if (/^#+ /.test(l)) { out.push(`<h${l.match(/^#+/)[0].length}>${inlineFormat(l.replace(/^#+ /, ''))}</h${l.match(/^#+/)[0].length}>`); continue; }
+            if (/^[-*•] /.test(l)) { if(!inUl) { out.push('<ul>'); inUl=true; } out.push(`<li>${inlineFormat(l.slice(2))}</li>`); continue; }
+            if (inUl && !/^[-*•] /.test(l)) { out.push('</ul>'); inUl=false; }
+            if (!l.trim()) { out.push('<br>'); continue; }
+            out.push(`<p>${inlineFormat(l)}</p>`);
+        }
+        return out.join('\n');
+
+        function inlineFormat(s) {
+            return s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/`([^`]+)`/g, '<code>$1</code>')
+                    .replace(/\[Source (\d+)\]/gi, '<span class="citation">S$1</span>')
+                    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<div class="result-img-wrap"><img src="$2" alt="$1"><p>🖼 $1</p></div>')
+                    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        }
+    }
+
+    async function startResearch() {
+      if (isResearching) return;
+      const query = document.getElementById('query-input').value.trim();
+      if (!query) return;
+      const format = document.getElementById('format-select').value;
+      
+      setResearching(true);
+      resetStages();
+      setStatus('Initializing...', 'active');
+      
+      // Proactive check: try to refresh token before opening WS if it's been a while
+      // or just refresh it every time to be absolutely sure the WS doesn't die.
+      const refreshed = await refreshToken(); 
+      if (!refreshed && !authToken) {
+          setResearching(false);
+          alert("Your session has expired. Please log in again.");
+          logout();
+          return;
+      }
+
+      const wsUrl = `${API.replace('http', 'ws')}/ws/research?token=${authToken}`;
+      const ws = new WebSocket(wsUrl);
+      activeWs = ws;
+      
+      let streamingResult = "";
+      
+      ws.onopen = () => ws.send(JSON.stringify({ query, format }));
+      ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.stage && data.stage !== 'streaming') updateStage(data.stage);
+        
+        if (data.stage === 'done') {
+          setResearching(false);
+          renderResult(query, data.result || streamingResult, data.pdf_url, data.timings, data.total_time);
+          loadHistory();
+          refreshUserInfo();
+        } else if (data.stage === 'error') {
+          setResearching(false);
+          alert(data.result);
+        } else if (data.stage === 'streaming') {
+           streamingResult += data.chunk;
+           renderPartialResult(query, streamingResult);
+        } else {
+          setStatus(data.status, 'active');
+        }
+      };
+    }
+    
+    function renderPartialResult(query, partial) {
+        document.getElementById('results-panel').innerHTML = `
+            <div class="result-card">
+                <div class="result-header">
+                    <div class="result-title">✦ ${esc(query)} <span style="font-size:0.8em; color:var(--text-dim)">(Generating...)</span></div>
+                </div>
+                <div class="result-body" id="result-content">
+                    ${mdToHtml(partial)}<span style="display:inline-block; width:8px; height:1em; background:var(--accent); animation:pulse 1s infinite alternate; margin-left:4px; vertical-align:text-bottom;"></span>
+                </div>
+            </div>`;
+    }
+
+    function setResearching(s) {
+        isResearching = s;
+        document.getElementById('research-btn').disabled = s;
+        document.getElementById('btn-text').textContent = s ? 'Working...' : 'Research';
+        document.getElementById('btn-spinner').style.display = s ? 'block' : 'none';
+    }
+
+    function resetStages() {
+        ['init', 'search', 'verify', 'process', 'generate', 'done'].forEach(s => {
+            const el = document.getElementById(`stage-${s}`);
+            if(el) el.className = 'stage';
+        });
+    }
+
+    function updateStage(stage) {
+        const stages = ['init', 'search', 'verify', 'process', 'generate', 'done'];
+        const idx = stages.indexOf(stage);
+        if(idx === -1) return;
+        stages.forEach((s, i) => {
+            const el = document.getElementById(`stage-${s}`);
+            if(!el) return;
+            if(i < idx) el.classList.add('done');
+            else if(i === idx) el.classList.add('active');
+            else el.className = 'stage';
+        });
+    }
+
+    function setStatus(t, s) {
+        document.getElementById('status-text').textContent = t;
+        const dot = document.getElementById('status-dot');
+        dot.className = 'status-dot';
+        if(s) dot.classList.add(s);
+    }
+
+    async function loadNotifications() {
+        try {
+            const res = await fetch(`${API}/support/notifications`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            const data = await res.json();
+            const count = data.notifications.filter(n => !n.is_read).length;
+            const badge = document.getElementById('notif-badge');
+            if(count > 0) { badge.textContent = count; badge.style.display = 'flex'; }
+            else { badge.style.display = 'none'; }
+            
+            document.getElementById('notif-list').innerHTML = data.notifications.map(n => `
+                <div style="padding:12px; border-bottom:1px solid var(--border-color); ${n.is_read ? 'opacity:0.6' : 'background:rgba(99,102,241,0.05)'}">
+                    <div style="font-weight:600; margin-bottom:4px;">${esc(n.title)}</div>
+                    <div style="color:var(--text-muted); font-size:0.8rem;">${esc(n.message)}</div>
+                </div>`).join('') || '<div style="text-align:center; padding:20px; color:var(--text-dim);">No notifications.</div>';
+        } catch(e) {}
+    }
+    
+    // Support Systems
+    function openSupportModal() { document.getElementById('support-modal').classList.add('open'); }
+    function closeSupportModal() { document.getElementById('support-modal').classList.remove('open'); }
+
+    async function submitSupport(e) {
+        e.preventDefault();
+        const btn = document.getElementById('support-btn');
+        const status = document.getElementById('support-status');
+        const originalText = btn.innerText;
+
+        btn.innerText = "Submitting...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API}/support/tickets`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({
+                    category: document.getElementById('support-category').value,
+                    subject: "Dashboard Request",
+                    description: document.getElementById('support-message').value
+                })
+            });
+            
+            if (res.ok) {
+                status.innerText = "✅ Successfully submitted! We'll reply soon.";
+                status.style.color = "var(--accent2)";
+                e.target.reset();
+                setTimeout(() => { closeSupportModal(); status.style.display = 'none'; }, 2000);
+            } else { throw new Error("Failed"); }
+        } catch (err) {
+            status.innerText = "❌ Error submitting. Try again later.";
+            status.style.color = "var(--danger)";
+        } finally {
+            status.style.display = 'block';
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // Payment/Billing Flow
+    // Payment/Flow
+    let selectedPlan = null, selectedAmount = 0, selectedCredits = 0, currentOrderId = null;
+
+    function openPaymentModal(creditExhausted = false) {
+        selectedPlan = null; selectedAmount = 0; selectedCredits = 0;
+        document.getElementById('btn-show-qr').disabled = true;
+        document.getElementById('credit-warning').style.display = creditExhausted ? 'block' : 'none';
+        document.getElementById('step-plans').style.display = 'block';
+        document.getElementById('step-qr').style.display = 'none';
+        
+        loadPlansIntoModal(); // Fetch latest plans & discounts from config
+        
+        document.getElementById('payment-modal').classList.add('open');
+    }
+
+    function closePaymentModal() { document.getElementById('payment-modal').classList.remove('open'); }
+
+    function selectPlan(plan, amount, credits, element) {
+        selectedPlan = plan; selectedAmount = amount; selectedCredits = credits;
+        
+        // Remove 'selected' class from all options
+        document.querySelectorAll('.plan-option').forEach(opt => opt.classList.remove('selected'));
+        // Add to current
+        element.classList.add('selected');
+        
+        document.getElementById('btn-show-qr').disabled = false;
+    }
+
+    async function showQRStep() {
+        if (!selectedPlan) return;
+        document.getElementById('step-plans').style.display = 'none';
+        document.getElementById('step-qr').style.display = 'block';
+        document.getElementById('qr-amount').textContent = `₹${selectedAmount}`;
+        document.getElementById('verify-status').style.display = 'block';
+        document.getElementById('verify-status').className = 'verify-status checking';
+        document.getElementById('verify-status').textContent = '⏳ Generating secure QR code...';
+
+        try {
+            const res = await fetch(`${API}/payment/create-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ 
+                    plan: selectedPlan,
+                    plan_amount: selectedAmount,
+                    plan_credits: selectedCredits
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Failed to create order.');
+
+            currentOrderId = data.order_id;
+            document.getElementById('qr-img').src = data.qr_image_url;
+            document.getElementById('verify-status').className = 'verify-status success';
+            document.getElementById('verify-status').textContent = `🔒 Order ID: ${data.order_id} generated.`;
+        } catch (err) {
+            document.getElementById('verify-status').className = 'verify-status fail';
+            document.getElementById('verify-status').textContent = `❌ ${err.message}`;
+        }
+    }
+
+    async function loadPlansIntoModal() {
+        const container = document.getElementById('plan-grid-container');
+        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-dim);">Loading global offers...</div>';
+        
+        try {
+            const res = await fetch(`${API}/auth/config`);
+            if(!res.ok) throw new Error();
+            const cfg = await res.json();
+
+            const isSale = cfg.discount_enabled === 'true' || cfg.discount_enabled === true || cfg.discount_enabled === 1;
+            const pct    = parseInt(cfg.discount_percent) || 0;
+            const label  = cfg.discount_label || '';
+
+            // Update modal global sale indicator
+            const modalSaleBar = document.getElementById('global-sale-announcement');
+            if (isSale && pct > 0) {
+                modalSaleBar.textContent = label || `🏷️ HUGE OFFER: ${pct}% DISCOUNT ON ALL PLANS!`;
+                modalSaleBar.style.display = 'block';
+            } else {
+                modalSaleBar.style.display = 'none';
+            }
+            const plans = [
+                { id: 'student',    name: 'Student',    price: 49,  credits: 50,  desc: '~50 research sessions' },
+                { id: 'researcher', name: 'Researcher', price: 99,  credits: 120, desc: '~120 research sessions' }
+            ];
+
+            // 2. Add Custom Plans from Config
+            if (cfg.custom_plans) {
+                try {
+                    const custom = JSON.parse(cfg.custom_plans);
+                    if (Array.isArray(custom)) {
+                        custom.forEach(p => {
+                            plans.push({
+                                id: p.id,
+                                name: p.name,
+                                price: parseInt(p.price),
+                                credits: parseInt(p.credits),
+                                desc: p.description || `~${p.credits} research sessions`
+                            });
+                        });
+                    }
+                } catch(e) { console.error("Custom plans parse error:", e); }
+            }
+
+            // 3. Render
+            let html = '';
+            
+            // Sale banner if enabled
+            const bannerEl = document.getElementById('discount-banner-active');
+            if (isSale && label) {
+                if(!bannerEl) {
+                   const b = document.createElement('div');
+                   b.id = 'discount-banner-active';
+                   b.className = 'discount-label';
+                   document.getElementById('step-plans').prepend(b);
+                }
+                document.getElementById('discount-banner-active').textContent = label;
+                document.getElementById('discount-banner-active').style.display = 'block';
+            } else if(bannerEl) {
+                bannerEl.style.display = 'none';
+            }
+
+            plans.forEach(p => {
+                const finalPrice = isSale ? Math.round(p.price * (1 - pct/100)) : p.price;
+                const badgeHtml  = (isSale && pct > 0) ? `<div class="sale-badge">⚡ ${pct}% OFF</div>` : '';
+                const priceHtml  = (isSale && pct > 0) 
+                    ? `<span class="original-price">₹${p.price}</span>₹${finalPrice}` 
+                    : `₹${p.price}`;
+
+                html += `
+                <div class="plan-option" onclick="selectPlan('${p.id}', ${finalPrice}, ${p.credits}, this)">
+                    ${badgeHtml}
+                    <div class="plan-badge">${p.name}</div>
+                    <div class="plan-price">${priceHtml} <span>/month</span></div>
+                    <p class="plan-feature"><strong>${p.credits} credits</strong><br>${p.desc}</p>
+                </div>`;
+            });
+            
+            container.innerHTML = html;
+
+        } catch(e) {
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--danger);">Failed to load latest offers. Please try again.</div>';
+        }
+    }
+
+    function backToPlanStep() { document.getElementById('step-plans').style.display = 'block'; document.getElementById('step-qr').style.display = 'none'; }
+
+    async function verifyPayment() {
+        const utr = document.getElementById('utr-input').value.trim();
+        const err = document.getElementById('utr-error');
+        if (!utr || utr.length < 6) { 
+            err.textContent = "Please enter a valid Transaction ID / UTR."; 
+            err.style.display = 'block'; 
+            return; 
+        }
+        
+        err.style.display = 'none';
+        const btn = document.getElementById('btn-verify');
+        const spinner = document.getElementById('verify-spinner');
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        
+        try {
+            const res = await fetch(`${API}/payment/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({ order_id: currentOrderId, utr_number: utr })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast("✅ Reference submitted! Credits will be added after admin verification (12-24h).");
+                closePaymentModal();
+                refreshUserInfo();
+            } else {
+                err.textContent = data.error || "Verification failed. Try again.";
+                err.style.display = 'block';
+            }
+        } catch (e) { 
+            err.textContent = "Error: " + e.message;
+            err.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            spinner.style.display = 'none';
+        }
+    }
+
+    // Refund & Billing History
+    function openRefundModal() { 
+        document.getElementById('refund-modal').classList.add('open'); 
+        loadBillingHistory();
+    }
+    function closeRefundModal() { document.getElementById('refund-modal').classList.remove('open'); }
+
+    async function loadBillingHistory() {
+        const list = document.getElementById('billing-history-list');
+        try {
+            const res = await fetch(`${API}/payment/history`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            const data = await res.json();
+            if (data.history && data.history.length > 0) {
+                list.innerHTML = data.history.map(h => `
+                    <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.85rem;">
+                        <span>${new Date(h.created_at).toLocaleDateString()} · ${h.plan.toUpperCase()}</span>
+                        <span style="color:var(--accent2)">₹${h.amount}</span>
+                    </div>
+                `).join('');
+            }
+        } catch(e) {}
+    }
+
+    async function submitRefundRequest(e) {
+        e.preventDefault();
+        const btn = document.getElementById('refund-btn');
+        const status = document.getElementById('refund-status');
+        btn.disabled = true;
+        btn.innerText = "Submitting...";
+
+        try {
+            const res = await fetch(`${API}/payment/cancel-subscription`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({
+                    bank_details: { utr: document.getElementById('refund-utr').value },
+                    survey_results: { reason: document.getElementById('refund-reason').value }
+                })
+            });
+            if (res.ok) {
+                status.innerText = "✅ Refund request sent. We'll process it soon.";
+                status.style.color = "var(--accent2)";
+                setTimeout(() => closeRefundModal(), 2000);
+            } else { throw new Error(); }
+        } catch (err) {
+            status.innerText = "❌ Failed to submit refund. Check UTR.";
+            status.style.color = "var(--danger)";
+        } finally {
+            status.style.display = 'block';
+            btn.disabled = false;
+            btn.innerText = "Submit Refund Request";
+        }
+    }
+
+    // Notifications
+    async function loadNotifications() {
+        try {
+            const res = await fetch(`${API}/support/notifications`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            const data = await res.json();
+            const badge = document.getElementById('notif-badge');
+            const unread = data.notifications.filter(n => !n.is_read).length;
+            if (unread > 0) {
+                badge.innerText = unread;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        } catch(e) {}
+    }
+  </script>
+</body>
+</html>

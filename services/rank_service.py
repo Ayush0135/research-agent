@@ -43,19 +43,19 @@ async def rank_and_store_chunks(chunks: List[Dict], query: str) -> List[Dict]:
         # Prioritize similarity score mixed with earlier verification score
         ranked.sort(key=lambda x: (x["similarity"] + x.get("verification_score", 0)*0.2), reverse=True)
         
-        # Enforce limits: Max 5 sources, Max 3 chunks per source
+        # Enforce limits: Max 10 sources, Max 4 chunks per source
         source_counts = {}
         sources_seen = set()
         final_top_k = []
         
         for r_chunk in ranked:
             url = r_chunk["url"]
-            # Enforce 5 source limit
-            if len(sources_seen) >= 5 and url not in sources_seen:
+            # Enforce 10 source limit
+            if len(sources_seen) >= 10 and url not in sources_seen:
                 continue
                 
             source_counts[url] = source_counts.get(url, 0) + 1
-            if source_counts[url] <= 3:
+            if source_counts[url] <= 4:
                 sources_seen.add(url)
                 final_top_k.append(r_chunk)
                 

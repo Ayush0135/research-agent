@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Surefact</title>
+  <link rel="stylesheet" href="/static/modern-ui.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      animation: fadeIn 0.6s ease-out;
+    }
+    .auth-card {
+      background: #111111;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 30px;
+      font-weight: 700;
+      color: #fff;
+      font-size: 1.2rem;
+    }
+    .logo-dot {
+      width: 12px;
+      height: 12px;
+      background: #6366f1;
+      border-radius: 3px;
+    }
+    .auth-tabs {
+       display: flex;
+       background: rgba(255,255,255,0.05);
+       padding: 4px;
+       border-radius: 12px;
+       margin-bottom: 24px;
+    }
+    .auth-tab {
+       flex: 1;
+       padding: 10px;
+       border: none;
+       background: transparent;
+       color: #94a3b8;
+       font-weight: 600;
+       cursor: pointer;
+       border-radius: 8px;
+       transition: all 0.2s;
+    }
+    .active-tab {
+       background: #111827;
+       color: #fff;
+    }
+    .form-group { margin-bottom: 20px; }
+    .label { display: block; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 8px; font-weight: 700; letter-spacing: 0.05em; }
+    .input { width: 100%; padding: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(30, 41, 59, 1); border-radius: 12px; color: #fff; font-size: 0.9rem; transition: border 0.3s; }
+    .input:focus { border-color: #6366f1; outline: none; }
+    .btn-full { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s; }
+    .btn-primary { background: #ffffff; color: #000000; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .error { color: #ef4444; font-size: 0.8rem; margin-top: 10px; display: none; text-align: center; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+       <div class="logo"><img src="/static/surefact_logo.png" style="height: 24px; border-radius: 4px;" alt="Surefact" /> Surefact</div>
+       
+       <div class="auth-tabs" id="auth-tabs">
+          <button class="auth-tab active-tab" onclick="setTab('login')">Sign In</button>
+          <button class="auth-tab" onclick="setTab('signup')">Sign Up</button>
+       </div>
+
+       <div id="login-view">
+          <form onsubmit="handleAuth(event, 'login')">
+             <div class="form-group">
+                <label class="label">Email Address</label>
+                <input type="email" id="login-email" class="input" placeholder="you@student.edu" required>
+             </div>
+             <div class="form-group">
+                <label class="label">Password</label>
+                <input type="password" id="login-pass" class="input" placeholder="••••••••" required>
+             </div>
+             <button type="submit" class="btn-full btn-primary" id="login-btn">Secure Login</button>
+          </form>
+       </div>
+
+       <div id="signup-view" style="display:none">
+          <form onsubmit="handleAuth(event, 'signup')">
+             <div class="form-group">
+                <label class="label">Choose Email</label>
+                <input type="email" id="signup-email" class="input" placeholder="you@student.edu" required>
+             </div>
+             <div class="form-group">
+                <label class="label">Create Password</label>
+                <input type="password" id="signup-pass" class="input" placeholder="Min. 6 characters" required minlength="6">
+             </div>
+             <button type="submit" class="btn-full btn-primary" id="signup-btn">Create Free Account</button>
+          </form>
+       </div>
+
+       <div id="otp-view" style="display:none; text-align:center;">
+          <h3 style="color:#fff; margin-bottom:10px;">Check your email</h3>
+          <p style="color:#94a3b8; font-size:0.85rem; margin-bottom:24px;">We sent a 6-digit code to <br><strong id="otp-email-display" style="color:#fff"></strong></p>
+          <input type="text" id="otp-input" class="input" style="text-align:center; font-size:1.5rem; letter-spacing:10px;" maxlength="6" placeholder="000000">
+          <button class="btn-full btn-primary" style="margin-top:20px" onclick="verifyOTP()">Verify Code</button>
+          <button class="auth-tab" style="margin-top:10px; font-size:0.8rem;" onclick="setTab('signup')">Change Email</button>
+       </div>
+
+       <p id="error-msg" class="error"></p>
+       <div id="appeal-form" style="display:none; margin-top:15px; background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.2); padding:15px; border-radius:8px;">
+           <p style="color:var(--danger); font-size:0.85rem; margin-bottom:10px;">If you believe this is a mistake, you can submit an appeal.</p>
+           <textarea id="appeal-reason" class="input" style="width:100%; height:80px; margin-bottom:10px; resize:none;" placeholder="Explain why your account should be restored..."></textarea>
+           <button class="btn-full btn-primary" style="background:var(--danger); border:none;" onclick="submitAppeal()">Submit Appeal</button>
+           <p id="appeal-status" style="margin-top:10px; font-size:0.8rem; color:var(--success); display:none;"></p>
+       </div>
+
+       <!-- Admin Portal Entry -->
+       <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
+          <a href="/admin" style="color: #818cf8; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            <span style="font-size: 1.1rem;">👨‍💼</span> Admin Dashboard
+          </a>
+       </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    let currentEmail = '';
+
+    // Check if already logged in
+    if (localStorage.getItem('ra_token')) {
+       window.location.href = '/dashboard';
+    }
+
+    function setTab(tab) {
+       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active-tab'));
+       const btns = document.querySelectorAll('.auth-tab');
+       if(tab === 'login') btns[0].classList.add('active-tab');
+       else btns[1].classList.add('active-tab');
+
+       document.getElementById('login-view').style.display = tab === 'login' ? 'block' : 'none';
+       document.getElementById('signup-view').style.display = tab === 'signup' ? 'block' : 'none';
+       document.getElementById('otp-view').style.display = 'none';
+       document.getElementById('auth-tabs').style.display = 'flex';
+    }
+
+    async function handleAuth(e, type) {
+       e.preventDefault();
+       const errorEl = document.getElementById('error-msg');
+       const btn = document.getElementById(`${type}-btn`);
+       
+       errorEl.style.display = 'none';
+       btn.disabled = true;
+       btn.textContent = 'Processing...';
+
+       const email = document.getElementById(`${type}-email`).value;
+       const password = document.getElementById(`${type}-pass`).value;
+       currentEmail = email;
+
+       try {
+          const endpoint = type === 'login' ? '/auth/login' : '/auth/signup';
+          const res = await fetch(`${API}${endpoint}`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ email, password })
+          });
+          const data = await res.json();
+
+          if (!res.ok) {
+             if (res.status === 403 && data.detail && data.detail.includes('suspended')) {
+                 document.getElementById('appeal-form').style.display = 'block';
+             }
+             throw new Error(data.detail || 'Auth failed');
+          }
+
+          if (data.requires_otp) {
+             showOTP(email);
+          } else {
+             localStorage.setItem('ra_token', data.access_token);
+             if (data.refresh_token) localStorage.setItem('ra_refresh_token', data.refresh_token);
+             localStorage.setItem('ra_user', JSON.stringify({ id: data.user_id, email: data.email }));
+             window.location.href = '/dashboard';
+          }
+       } catch (err) {
+          errorEl.textContent = err.message;
+          errorEl.style.display = 'block';
+       } finally {
+          btn.disabled = false;
+          btn.textContent = type === 'login' ? 'Secure Login' : 'Create Free Account';
+       }
+    }
+
+    function showOTP(email) {
+       document.getElementById('login-view').style.display = 'none';
+       document.getElementById('signup-view').style.display = 'none';
+       document.getElementById('auth-tabs').style.display = 'none';
+       document.getElementById('otp-view').style.display = 'block';
+       document.getElementById('otp-email-display').textContent = email;
+    }
+
+    async function verifyOTP() {
+       const otp = document.getElementById('otp-input').value;
+       const errorEl = document.getElementById('error-msg');
+       try {
+          const res = await fetch(`${API}/auth/verify-otp`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ email: currentEmail, token: otp })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Invalid code');
+
+          if (data.access_token) {
+             localStorage.setItem('ra_token', data.access_token);
+             if (data.refresh_token) localStorage.setItem('ra_refresh_token', data.refresh_token);
+             localStorage.setItem('ra_user', JSON.stringify({ id: data.user_id, email: data.email }));
+             window.location.href = '/dashboard';
+          } else {
+             setTab('login');
+             document.getElementById('login-email').value = currentEmail;
+             alert('Email verified! Please login with your password.');
+          }
+       } catch(err) {
+          errorEl.textContent = err.message;
+          errorEl.style.display = 'block';
+       }
+    }
+
+    async function submitAppeal() {
+        const reason = document.getElementById('appeal-reason').value;
+        const statusEl = document.getElementById('appeal-status');
+        
+        if (!reason.trim()) {
+            alert('Please provide a reason for your appeal.');
+            return;
+        }
+
+        try {
+            statusEl.style.display = 'block';
+            statusEl.style.color = 'var(--text)';
+            statusEl.textContent = 'Submitting appeal...';
+            
+            const res = await fetch(`${API}/auth/submit-appeal`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: currentEmail, reason: reason })
+            });
+            const data = await res.json();
+            
+            if (!res.ok) throw new Error(data.detail || 'Appeal submission failed');
+            
+            statusEl.style.color = 'var(--success)';
+            statusEl.textContent = '✅ ' + data.message;
+            document.getElementById('appeal-reason').value = '';
+            
+        } catch (err) {
+            statusEl.style.color = 'var(--danger)';
+            statusEl.textContent = '❌ ' + err.message;
+        }
+    }
+  </script>
+</body>
+</html>

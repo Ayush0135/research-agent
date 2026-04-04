@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUREFACT - Admin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            /* Core Palette - Obsidian & Azure */
+            --bg: #020617;
+            --surface: #0f172a;
+            --card: #1e293b;
+            --border: rgba(148, 163, 184, 0.1);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+            --glass: blur(12px) saturate(180%);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: var(--bg);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            z-index: 50;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            flex-shrink: 0;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+        }
+
+        .logo img {
+            height: 24px;
+            filter: brightness(1.1);
+        }
+
+        .nav-links { display: flex; flex-direction: column; gap: 6px; }
+        
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+            border: 1px solid transparent;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border);
+        }
+
+        .nav-item.active {
+            background: var(--accent-glow);
+            color: var(--accent);
+            border-color: rgba(56, 189, 248, 0.2);
+            font-weight: 600;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 3rem;
+            min-width: 0; /* Prevents flex from expanding wide items beyond container width */
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.03), transparent 40%);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        /* Stats & Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card p {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card h3 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-top: 12px;
+            color: var(--text-primary);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.3;
+        }
+
+        /* Panels */
+        .glass-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-header h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        /* Tables */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+        
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 16px;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 18px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* Buttons & Inputs */
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #020617;
+        }
+        .btn-primary:hover {
+            background: #7dd3fc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        .btn-ghost:hover {
+            background: rgba(255,255,255,0.03);
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            background: var(--surface);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge.free { background: rgba(148, 163, 184, 0.1); color: var(--text-secondary); border: 1px solid var(--border); }
+        .badge.pro { background: rgba(56, 189, 248, 0.1); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.2); }
+        .badge.suspended, .badge.active-ban { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge.expired { background: rgba(100, 116, 139, 0.1); color: var(--text-muted); }
+        .badge.revoked { background: rgba(161, 161, 170, 0.1); color: var(--text-secondary); }
+
+        /* Auth Screen */
+        #auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.85);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(12px);
+        }
+
+        .modal-content {
+            background: var(--surface);
+            width: 640px;
+            max-width: 95%;
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            border: 1px solid var(--border);
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        .reason-select { width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 0.9rem; margin-bottom: 15px; cursor: pointer; }
+        .reason-select option { background: #0a0c10; color: var(--text); }
+    </style>
+</head>
+<body>
+
+    <!-- Admin Auth Screen -->
+    <div id="auth-overlay">
+        <div class="auth-card" id="login-box">
+            <!-- Logo inside auth -->
+            <div class="logo" style="justify-content: center; margin-bottom: 20px;">
+                <img src="/static/surefact_logo.png" style="height: 24px; border-radius: 4px;" alt="Surefact" /> SUREFACT ADMIN
+            </div>
+            <h2>Admin Login</h2>
+            <p>Enter your employee email to access the terminal.</p>
+            <input type="email" id="admin-email" class="form-input" placeholder="admin@employee.com" />
+            <div id="auth-error" style="color: var(--danger); font-size: 0.8rem; margin-bottom: 15px; display: none;"></div>
+            <button type="button" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem;" onclick="requestAdminOTP()">Request Access</button>
+        </div>
+
+        <div class="auth-card" id="otp-box" style="display: none;">
+            <div class="logo" style="justify-content: center; margin-bottom: 20px;">
+                <img src="/static/surefact_logo.png" style="height: 24px; border-radius: 4px;" alt="Surefact" /> SUREFACT ADMIN
+            </div>
+            <h2>Verify Identity</h2>
+            <p>An OTP was sent to your employee email.</p>
+            <input type="text" id="admin-otp" class="form-input" placeholder="6-digit OTP code" maxlength="6" />
+            <div id="otp-error" style="color: var(--danger); font-size: 0.8rem; margin-bottom: 15px; display: none;"></div>
+            <button type="button" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem;" onclick="verifyAdminOTP()">Verify & Login</button>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <img src="/static/surefact_logo.png" style="height: 24px; border-radius: 4px;" alt="Surefact" />
+            SUREFACT HUB
+        </div>
+        <div class="nav-links">
+            <button type="button" class="nav-item active" id="tab-dashboard" onclick="switchTab('dashboard')">Overview</button>
+            <button type="button" class="nav-item" id="tab-users" onclick="switchTab('users')">User Management</button>
+            <button type="button" class="nav-item" id="tab-queries" onclick="switchTab('queries')">Global Queries</button>
+            <button type="button" class="nav-item" id="tab-refunds" onclick="switchTab('refunds')">Refund Requests</button>
+            <button type="button" class="nav-item" id="tab-payments" onclick="switchTab('payments')">Payment Verification <span id="payment-badge-admin" style="display:none; background:var(--accent); color:black; border-radius:4px; padding:2px 6px; font-size:10px; margin-left:5px;">Pending</span></button>
+            <button type="button" class="nav-item" id="tab-certificates" onclick="switchTab('certificates')">📜 Issued Certificates</button>
+            <button type="button" class="nav-item" id="tab-compliance" onclick="switchTab('compliance')">Compliance Hub <span id="notif-badge-admin" style="display:none; background:var(--danger); color:white; border-radius:4px; padding:2px 6px; font-size:10px; margin-left:5px;">Alert</span></button>
+            <button type="button" class="nav-item" id="tab-suspensions" onclick="switchTab('suspensions')">Suspensions</button>
+            <button type="button" class="nav-item" id="tab-appeals" onclick="switchTab('appeals')">Appeals</button>
+            <button type="button" class="nav-item" id="tab-config" onclick="switchTab('config')">Platform Rules</button>
+            <button type="button" class="nav-item" id="tab-announcements" onclick="switchTab('announcements')">📢 Announcements</button>
+            <button type="button" class="nav-item" id="tab-registry" onclick="switchTab('registry')">Security Protocol</button>
+        </div>
+        <div style="flex: 1;"></div>
+        <button type="button" class="btn btn-danger" onclick="logoutAdmin()" style="width: 100%;">Exit Terminal</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <p>Welcome back, Employee</p>
+                <h1 id="admin-header-email" style="font-family: 'JetBrains Mono', monospace;">Loading...</h1>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="checkAuthAndLoad(true)">Refresh Status</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard-section" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p>Total Registered Users</p>
+                    <h3 id="stat-users">--</h3>
+                </div>
+                <div class="stat-card">
+                    <p>Total AI Queries Run</p>
+                    <h3 id="stat-queries">--</h3>
+                </div>
+                <div class="stat-card">
+                    <p>Total Credits Remaining</p>
+                    <h3 id="stat-credits">--</h3>
+                </div>
+                <div class="stat-card">
+                    <p>Active Premium Plans</p>
+                    <h3 id="stat-premium">--</h3>
+                </div>
+            </div>
+            <!-- Containers for Dynamic Sections -->
+            <div id="trends-container"></div>
+            <div id="top-queries-container"></div>
+        </div>
+
+        <!-- Users Management Tab -->
+        <div id="users-section" class="tab-content" style="display: none;">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>Employee Access: Manage All Users</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Plan</th>
+                            <th>Credits</th>
+                            <th>History Count</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Queries Tab -->
+        <div id="queries-section" class="tab-content" style="display: none;">
+            <div class="glass-panel">
+                <div class="panel-header" style="justify-content: space-between;">
+                    <h3>Recent Global Research Queries</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User ID (Trunc)</th>
+                            <th>Query string</th>
+                            <th>Format</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queries-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Refunds Tab -->
+        <div id="refunds-section" class="tab-content" style="display: none;">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>Subscription Refund Requests</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Process refunds for cancelled premium plans.</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>User Email</th>
+                            <th>Refund Amount</th>
+                            <th>Request Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="refunds-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Payments Verification Tab -->
+        <div id="payments-section" class="tab-content" style="display: none;">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>Pending Premium Verifications</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Verify UTR numbers against bank records before granting credits.</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User Email</th>
+                            <th>Plan</th>
+                            <th>Amount</th>
+                            <th>UTR Number</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payments-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Compliance Hub Tab -->
+        <div id="compliance-section" class="tab-content" style="display: none;">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>User Support & Compliance Tickets</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Manage refund requests, upgrades, and content disputes.</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Email</th>
+                            <th>Category</th>
+                            <th>Subject</th>
+                            <th>Received</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tickets-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Platform Configuration Section -->
+        <div id="config-section" class="tab-content" style="display:none">
+            <div class="header">
+                <div>
+                    <p>System-wide Configuration</p>
+                    <h1>Platform Rules & AI Control</h1>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="savePlatformConfig(event)">Save All Changes</button>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-top:24px;">
+                <!-- AI Controls -->
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>AI Behavioral Logic</h3></div>
+                    <div style="margin-top:15px;">
+                        <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:10px; text-transform:uppercase; font-weight:700;">Global System Instruction</label>
+                        <textarea id="cfg-system-instruction" class="form-input" rows="10" style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; line-height:1.5; resize:none; border-color:var(--accent);"></textarea>
+                        <p style="font-size:0.75rem; color:var(--muted); margin-top:8px;">This prompt is prepended to every research query to control AI tone and depth.</p>
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:25px; padding:15px; background:rgba(255,255,255,0.02); border-radius:12px;">
+                        <div>
+                            <div style="font-weight:600; font-size:0.9rem;">Enable Image Generation</div>
+                            <div style="font-size:0.75rem; color:var(--muted);">Allows AI to generate real-time diagrams and visuals.</div>
+                        </div>
+                        <input type="checkbox" id="cfg-image-gen" style="width:22px; height:22px;">
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding:15px; background:rgba(255,255,255,0.02); border-radius:12px;">
+                        <div>
+                            <div style="font-weight:600; font-size:0.9rem;">Minimum Citations</div>
+                            <div style="font-size:0.75rem; color:var(--muted);">Enforce minimum source links per report.</div>
+                        </div>
+                        <input type="number" id="cfg-min-citations" class="form-input" style="width:70px; margin-bottom:0; text-align:center;">
+                    </div>
+                </div>
+
+                <!-- Business Rules -->
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>Site & Service Controls</h3></div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px; padding:15px; background:rgba(255,75,109,0.05); border:1px solid rgba(255,75,109,0.2); border-radius:12px;">
+                        <div>
+                            <div style="font-weight:600; font-size:0.9rem; color:var(--danger);">Maintenance Mode</div>
+                            <div style="font-size:0.75rem; color:var(--muted);">Locks the dashboard for all regular users.</div>
+                        </div>
+                        <input type="checkbox" id="cfg-maint-mode" style="width:22px; height:22px;">
+                    </div>
+
+                    <div style="margin-top:25px;">
+                        <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:10px; text-transform:uppercase; font-weight:700;">Broadcast Alert (Home Banner)</label>
+                        <input type="text" id="cfg-broadcast" class="form-input" placeholder="e.g. API scheduled maintenance tonight at 10 PM IST">
+                    </div>
+
+                    <div style="margin-top:10px;">
+                        <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:10px; text-transform:uppercase; font-weight:700;">New User Bonus Credits</label>
+                        <input type="number" id="cfg-free-credits" class="form-input" placeholder="5">
+                    </div>
+
+                    <div style="margin-top:10px;">
+                        <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:10px; text-transform:uppercase; font-weight:700;">Blacklisted Topics (JSON Array)</label>
+                        <textarea id="cfg-blacklist" class="form-input" rows="3" style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; resize:none;" placeholder='["nsfw", "politics"]'></textarea>
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px;">
+                        <div>
+                            <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:10px; text-transform:uppercase; font-weight:700;">API Rate Limit (Requests/Min)</label>
+                            <input type="number" id="cfg-http-ratelimit" class="form-input" placeholder="120">
+                        </div>
+                        <div>
+                            <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:10px; text-transform:uppercase; font-weight:700;">AI Request Limit (Reqs/Min)</label>
+                            <input type="number" id="cfg-ws-ratelimit" class="form-input" placeholder="8">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Registry Tab -->
+        <div id="registry-section" class="tab-content" style="display: none;">
+            <div class="glass-panel" style="margin-bottom: 2rem;">
+                <div class="panel-header">
+                    <h3>Authorize New Administrator</h3>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="email" id="new-admin-email" class="form-input" style="margin-bottom: 0; flex: 1;" placeholder="employee@company.com">
+                    <button type="button" class="btn btn-primary" onclick="addAdminAccess()">Grant Clearance</button>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>Authorized Personnel Registry</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Admin ID</th>
+                            <th>Secured Email Address</th>
+                            <th>Granted On</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Suspensions Management Tab -->
+        <div id="suspensions-section" class="tab-content" style="display: none;">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>Account Suspensions</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">Manage and monitor account-level restrictions.</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Email</th>
+                            <th>Reason</th>
+                            <th>Suspended By</th>
+                            <th>Expires</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suspensions-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Appeals Management Tab -->
+        <div id="appeals-section" class="tab-content" style="display: none;">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h3>Account Appeals</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">Review and resolve user appeal requests.</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Email</th>
+                            <th style="width: 40%">Appeal Reason</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appeals-table-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ────────────── Announcements Tab ────────────── -->
+        <!-- Certificates Tab -->
+        <div id="certificates-section" class="tab-content" style="display:none;">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+                    <div>
+                        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: var(--text-primary);">Issued Certificates</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;">Manage professional verification IDs and PDF receipts.</p>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Authenticity</th>
+                                <th>Order ID</th>
+                                <th>Account</th>
+                                <th>Plan</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="certificates-table-body">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="announcements-section" class="tab-content" style="display:none">
+            <div class="header">
+                <div>
+                    <p>Live Broadcast System</p>
+                    <h1>Announcements &amp; Ticker</h1>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;">
+                <!-- Composer Panel -->
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>✍️ Compose Announcement</h3></div>
+
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;font-weight:700;">Ticker Message</label>
+                        <textarea id="ticker-text-input" class="form-input" rows="3" oninput="updateTickerPreview()"
+                            placeholder="🚀 New feature unlocked! Premium users now get 120 research sessions..." style="resize:none;"></textarea>
+                        <p style="font-size:.72rem;color:var(--text-muted);margin-top:6px;">Tip: Use emojis to make it pop! Text loops seamlessly as it scrolls.</p>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;font-weight:700;">Banner Style</label>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <button id="stbtn-info"    onclick="selectTickerStyle('info')"    style="padding:8px 16px;border-radius:8px;border:2px solid rgba(56,189,248,.5);background:rgba(56,189,248,.08);color:#38bdf8;font-weight:700;cursor:pointer;">🔵 Info</button>
+                            <button id="stbtn-promo"   onclick="selectTickerStyle('promo')"   style="padding:8px 16px;border-radius:8px;border:2px solid rgba(139,92,246,.3);background:transparent;color:#a78bfa;font-weight:700;cursor:pointer;">🟣 Promo</button>
+                            <button id="stbtn-warning" onclick="selectTickerStyle('warning')" style="padding:8px 16px;border-radius:8px;border:2px solid rgba(245,158,11,.3);background:transparent;color:#f59e0b;font-weight:700;cursor:pointer;">🟡 Alert</button>
+                            <button id="stbtn-success" onclick="selectTickerStyle('success')" style="padding:8px 16px;border-radius:8px;border:2px solid rgba(16,185,129,.3);background:transparent;color:#10b981;font-weight:700;cursor:pointer;">🟢 Success</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;font-weight:700;">Scroll Speed</label>
+                        <div style="display:flex;gap:10px;">
+                            <button id="spbtn-slow"   onclick="selectTickerSpeed('slow')"   style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;">🐢 Slow</button>
+                            <button id="spbtn-normal" onclick="selectTickerSpeed('normal')" style="padding:8px 16px;border-radius:8px;border:2px solid var(--accent);background:var(--accent-glow);color:var(--accent);cursor:pointer;font-weight:700;">🚶 Normal</button>
+                            <button id="spbtn-fast"   onclick="selectTickerSpeed('fast')"   style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;">⚡ Fast</button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;background:rgba(255,255,255,.02);border-radius:12px;margin-bottom:20px;">
+                        <div>
+                            <div style="font-weight:600;font-size:.9rem;">Ticker Active</div>
+                            <div style="font-size:.75rem;color:var(--text-muted);">Show this announcement to all users</div>
+                        </div>
+                        <input type="checkbox" id="ticker-enabled-chk" onchange="updateTickerPreview()" style="width:22px;height:22px;cursor:pointer;">
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:1rem;" onclick="saveTickerConfig(this)">
+                        📡 Publish Announcement
+                    </button>
+                    <p id="ticker-save-status" style="text-align:center;font-size:.85rem;margin-top:12px;display:none;"></p>
+                </div>
+
+                <!-- Preview Panel -->
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>👁 Live Preview</h3></div>
+                    <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:20px;">This is exactly how the banner will appear on users' dashboards.</p>
+
+                    <div id="ticker-preview-wrap" style="border-radius:12px;overflow:hidden;margin-bottom:24px;min-height:48px;"></div>
+
+                    <div style="background:rgba(255,255,255,.02);border-radius:12px;padding:20px;font-size:.85rem;">
+                        <h4 style="margin-bottom:14px;font-size:.9rem;">📊 Current Status</h4>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+                            <span style="color:var(--text-muted);">Active</span>
+                            <span id="tkstat-enabled" style="color:var(--danger);font-weight:700;">● Off</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+                            <span style="color:var(--text-muted);">Style</span>
+                            <span id="tkstat-style" style="font-weight:600;">Info</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;">
+                            <span style="color:var(--text-muted);">Speed</span>
+                            <span id="tkstat-speed" style="font-weight:600;">Normal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discount / Offers Section -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;">
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>💸 Discount Offers</h3></div>
+                    <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:20px;">Set a % off on all premium plans. A sale badge appears in the upgrade modal.</p>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;font-weight:700;">Quick Select %</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;" id="disc-btn-row">
+                            <button onclick="setDiscount(5)"  id="disc-5"  style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600;">5%</button>
+                            <button onclick="setDiscount(10)" id="disc-10" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600;">10%</button>
+                            <button onclick="setDiscount(15)" id="disc-15" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600;">15%</button>
+                            <button onclick="setDiscount(20)" id="disc-20" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600;">20%</button>
+                            <button onclick="setDiscount(25)" id="disc-25" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600;">25%</button>
+                            <button onclick="setDiscount(50)" id="disc-50" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600;">50%</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+                            <input type="number" id="disc-custom-input" class="form-input" min="1" max="90" placeholder="Custom %" style="margin-bottom:0;width:120px;" oninput="setDiscount(parseInt(this.value)||0)">
+                            <span style="color:var(--text-muted);font-size:.85rem;">% off all plans</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-size:.75rem;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;font-weight:700;">Offer Label</label>
+                        <input type="text" id="disc-label-input" class="form-input" placeholder="e.g. 🎉 Limited Time Sale! Ends Sunday" style="margin-bottom:0;">
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:rgba(255,255,255,.02);border-radius:12px;margin-bottom:20px;">
+                        <div>
+                            <div style="font-weight:600;font-size:.9rem;">Discount Active</div>
+                            <div style="font-size:.75rem;color:var(--text-muted);">Apply sale badge to all plans on upgrade page</div>
+                        </div>
+                        <input type="checkbox" id="disc-enabled-chk" style="width:22px;height:22px;cursor:pointer;" onchange="renderDiscountPreview()">
+                    </div>
+                    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;" onclick="saveDiscountConfig(this)">🏷 Publish Offer</button>
+                    <p id="disc-save-status" style="text-align:center;font-size:.85rem;margin-top:10px;display:none;"></p>
+                </div>
+
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>👁 Offer Preview</h3></div>
+                    <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:20px;">How plan cards look to users when a discount is active.</p>
+                    <div id="disc-preview" style="display:flex;flex-direction:column;gap:12px;min-height:80px;"></div>
+                    <div style="margin-top:20px;background:rgba(255,255,255,.02);padding:16px;border-radius:12px;font-size:.85rem;">
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+                            <span style="color:var(--text-muted);">Discount</span>
+                            <span id="discstat-pct" style="font-weight:700;color:var(--success);">0%</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:6px 0;">
+                            <span style="color:var(--text-muted);">Status</span>
+                            <span id="discstat-active" style="font-weight:700;color:var(--danger);">● Off</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan Builder Section -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;">
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>📦 Plan Builder</h3></div>
+                    <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:20px;">Create custom subscription tiers beyond Student &amp; Researcher.</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                        <div>
+                            <label style="display:block;font-size:.72rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;font-weight:700;">Plan ID (slug)</label>
+                            <input type="text" id="plan-id-input" class="form-input" placeholder="e.g. elite" style="margin-bottom:0;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.72rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;font-weight:700;">Display Name</label>
+                            <input type="text" id="plan-name-input" class="form-input" placeholder="e.g. Elite Scholar" style="margin-bottom:0;">
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                        <div>
+                            <label style="display:block;font-size:.72rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;font-weight:700;">Price (&#8377;)</label>
+                            <input type="number" id="plan-price-input" class="form-input" placeholder="149" min="1" style="margin-bottom:0;">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.72rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;font-weight:700;">Credits</label>
+                            <input type="number" id="plan-credits-input" class="form-input" placeholder="180" min="1" style="margin-bottom:0;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-size:.72rem;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;font-weight:700;">Description (shown to users)</label>
+                        <input type="text" id="plan-desc-input" class="form-input" placeholder="e.g. ~180 deep research sessions" style="margin-bottom:0;">
+                    </div>
+                    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;" onclick="addCustomPlan()">+ Add Plan</button>
+                    <p id="plan-builder-status" style="text-align:center;font-size:.85rem;margin-top:10px;display:none;"></p>
+                </div>
+
+                <div class="glass-panel">
+                    <div class="panel-header"><h3>📋 All Plans</h3></div>
+                    <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:16px;">Built-in and custom plans visible on the upgrade page.</p>
+                    <table style="font-size:.82rem;width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="text-align:left;border-bottom:1px solid var(--border);">
+                                <th style="padding:8px 6px;">Name</th>
+                                <th style="padding:8px 6px;">Price</th>
+                                <th style="padding:8px 6px;">Credits</th>
+                                <th style="padding:8px 6px;">Type</th>
+                                <th style="padding:8px 6px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-plans-table">
+                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal User Details -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">User Summary</h3>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('modal').style.display = 'none'">Close</button>
+            </div>
+            <div class="glass-panel">
+                <p><strong>Email:</strong> <span id="modal-email"></span></p>
+                <p><strong>ID:</strong> <code id="modal-id" style="color: var(--muted)"></code></p>
+                <p><strong>Plan:</strong> <span id="modal-plan" class="badge"></span></p>
+                <p><strong>Credits Left:</strong> <span id="modal-credits"></span></p>
+                
+                <h4 style="margin-top: 15px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">Full User History (<span id="history-limit"></span> results, <span id="history-count">0</span> found)</h4>
+                <ul id="modal-history" style="margin-top: 10px; list-style: none; display: flex; flex-direction: column; gap: 8px;">
+                    <!-- JS populated -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Ticket Details -->
+    <div id="modal-ticket" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Support Ticket Details</h3>
+                <button type="button" class="btn btn-ghost" onclick="closeTicketModal()">Close</button>
+            </div>
+            <div id="ticket-details" style="margin-bottom: 1rem;">
+                <!-- Ticket details will be loaded here -->
+            </div>
+            <div id="reply-section">
+                <textarea id="reply-text" class="form-input" placeholder="Type your response here..." rows="5" style="margin-bottom: 10px;"></textarea>
+                <div id="reply-status" style="font-size: 0.85rem; margin-bottom: 10px; display: none;"></div>
+                <button type="button" class="btn btn-primary" id="btn-reply-send" style="width: 100%;" onclick="sendTicketReply()">Send Response & Resolve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Refund Details -->
+    <div id="modal-refund" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Process Refund</h3>
+                <button type="button" class="btn btn-ghost" onclick="closeRefundModal()">Close</button>
+            </div>
+            <div id="refund-details">
+                <!-- Populated by JS -->
+            </div>
+            <div id="refund-pay-section" style="margin-top:20px; text-align:center; padding:20px; background:rgba(255,255,255,0.02); border-radius:12px;">
+                <p style="color:var(--muted); font-size:0.85rem; margin-bottom:15px;">Scan to PAY Refund</p>
+                <img id="refund-qr-img" src="" style="width:200px; height:200px; border-radius:8px; margin-bottom:15px;" />
+                <div class="form-group" style="text-align:left;">
+                    <label class="form-label">Transaction ID / Reference</label>
+                    <input type="text" id="refund-tr-id" class="form-input" placeholder="Enter bank reference number..." />
+                </div>
+                <button type="button" class="btn btn-primary" style="width:100%;" onclick="confirmRefundComplete()">Mark as Refunded</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Account Suspension -->
+    <div id="modal-suspend" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 style="color: var(--danger);">Suspend User Account</h3>
+                <button type="button" class="btn btn-ghost" onclick="closeSuspendModal()">Close</button>
+            </div>
+            <div style="background:rgba(239, 68, 68, 0.05); padding:1.25rem; border-radius:var(--radius-md); border:1px solid rgba(239, 68, 68, 0.2); margin-bottom:1.5rem;">
+                <p style="font-size:0.875rem; color:var(--text-secondary);">Target: <strong id="suspend-target-email" style="color:var(--danger)"></strong></p>
+                <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:8px;">Suspension revokes credits and restricts access for a minimum of 72 hours. A formal notice will be dispatched via secure email.</p>
+            </div>
+
+            <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:8px; text-transform:uppercase; font-weight:700;">Violation Category</label>
+            <select id="suspend-reason" class="reason-select">
+                <option value="" disabled selected>Select Violation Type...</option>
+                <option value="abusive_language">Abusive Language</option>
+                <option value="misconduct">General Misconduct</option>
+                <option value="inappropriate_content">Inappropriate Content</option>
+                <option value="fraud_attempt">Fraud / Payment Abuse</option>
+                <option value="tos_violation">Terms of Service Violation</option>
+            </select>
+
+            <label style="display:block; font-size:0.75rem; color:var(--muted); margin-bottom:8px; text-transform:uppercase; font-weight:700;">Admin Notes (Optional)</label>
+            <textarea id="suspend-notes" class="form-input" rows="3" placeholder="Internal notes about this action..."></textarea>
+
+            <button type="button" class="btn btn-danger" style="width:100%; padding:12px; font-size:0.95rem; margin-top:10px;" onclick="executeSuspension()">Confirm Suspension</button>
+        </div>
+    </div>
+
+    <script>
+        // STRICTLY use admin_token. Do not share session with standard users.
+        let token = (localStorage.getItem("admin_token") || "").trim();
+        let currentAdminEmail = (localStorage.getItem("admin_email") || "").trim();
+        
+        // --- SMART ROUTING: Target port 8000 if frontend is on 5500 ---
+        const API_BASE = window.location.port === "5500" ? "http://localhost:8000" : "";
+        console.log("Using API Base:", API_BASE || "(Root Relative)");
+
+        // Compliance & Tickets
+        let currentTicketId = null;
+        let currentTicketUser = null;
+        let activeRefundId = null;
+
+        // ── Utility: HTML-escape to prevent XSS ──
+        function esc(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function relTime(iso) {
+            const d = new Date(iso), now = new Date(), diff = (now - d) / 1000;
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            return `${Math.floor(diff / 86400)}d ago`;
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            if(token) {
+                checkAuthAndLoad();
+            }
+        });
+
+        async function requestAdminOTP() {
+            const email = document.getElementById("admin-email").value.trim();
+            if(!email) return;
+
+            const err = document.getElementById("auth-error");
+            err.style.display = 'none';
+
+            try {
+                const res = await fetch(API_BASE + "/auth/admin/send-otp", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email }) 
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Authentication Failed");
+
+                document.getElementById('login-box').style.display = 'none';
+                document.getElementById('otp-box').style.display = 'block';
+                currentAdminEmail = email;
+                localStorage.setItem("admin_email", email);
+            } catch(e) {
+                err.innerText = e.message;
+                err.style.display = 'block';
+            }
+        }
+
+        async function verifyAdminOTP() {
+            const otpCode = document.getElementById("admin-otp").value.trim();
+            const err = document.getElementById("otp-error");
+            err.style.display = 'none';
+            try {
+                const res = await fetch(API_BASE + "/auth/admin/verify-otp", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentAdminEmail, token: otpCode })
+                });
+                const data = await res.json();
+                if(!res.ok) throw new Error(data.detail);
+
+                token = data.access_token;
+                localStorage.setItem("admin_token", token);
+                checkAuthAndLoad();
+            } catch(e) {
+                err.innerText = e.message;
+                err.style.display = 'block';
+            }
+        }
+
+        async function checkAuthAndLoad(isManual = false) {
+            try {
+                if (currentAdminEmail) {
+                    document.getElementById("admin-header-email").innerText = currentAdminEmail;
+                }
+
+                const res = await fetch(API_BASE + "/admin-api/dashboard-stats", {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.status === 403 || res.status === 401) {
+                    localStorage.removeItem("admin_token");
+                    const data = await res.json();
+                    document.getElementById('auth-error').innerText = data.detail || "Admin session expired.";
+                    document.getElementById('auth-error').style.display = 'block';
+                    document.getElementById('auth-overlay').style.display = 'flex';
+                    document.getElementById('login-box').style.display = 'block';
+                    document.getElementById('otp-box').style.display = 'none';
+                    return;
+                }
+
+                if (!res.ok) throw new Error("Failed to load");
+                const statsData = await res.json();
+                document.getElementById('auth-overlay').style.display = 'none';
+
+                populateDashboard(statsData);
+                loadAllUsers();
+                loadAdminRegistry(); 
+                fetchTickets();
+                loadRefundRequests();
+                loadPlatformConfig(); // Load config on initial auth
+
+                if(isManual) {
+                    console.log("Dashboard Refresh Complete");
+                }
+
+            } catch (e) {
+                console.error(e);
+                if (!isManual) {
+                    localStorage.removeItem("admin_token");
+                    document.getElementById('auth-overlay').style.display = 'flex';
+                    document.getElementById('login-box').style.display = 'block';
+                    document.getElementById('otp-box').style.display = 'none';
+                }
+            }
+        }
+
+        function populateDashboard(data) {
+            document.getElementById('stat-users').innerText = data.stats.total_users;
+            document.getElementById('stat-queries').innerText = data.stats.total_queries.toLocaleString();
+            document.getElementById('stat-premium').innerText = data.stats.active_premium;
+            document.getElementById('stat-credits').innerText = data.stats.total_credits_in_system.toLocaleString();
+            
+            // Trends & graphs
+            if (data.trends) {
+                renderTrends(data.trends);
+                renderTopQueries(data.trends.top_queries);
+            }
+        }
+        
+        function renderTrends(trends) {
+            const container = document.getElementById('trends-container');
+            // Check if chart element already exists to avoid re-rendering entire HTML
+            if (document.getElementById('dailyChart')) {
+                // We'll still update it but not with innerHTML +=
+                return; 
+            }
+
+            container.innerHTML = `
+                <div class="glass-panel" id="trends-section" style="margin-top: 2rem;">
+                    <div class="panel-header">
+                        <h3>7-Day Trends</h3>
+                    </div>
+                    <canvas id="dailyChart" height="200" style="max-height: 250px;"></canvas>
+                    <div style="display: flex; gap: 2rem; margin-top: 1rem; font-size: 0.85rem;">
+                        <div><strong>New users today:</strong> ${trends.new_users_today || 0}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Chart.js daily queries
+            const ctx = document.getElementById('dailyChart')?.getContext('2d');
+            if (ctx && trends.daily_queries) {
+                const labels = Object.keys(trends.daily_queries).sort();
+                const dataValues = labels.map(l => trends.daily_queries[l]);
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Daily Queries',
+                            data: dataValues,
+                            borderColor: 'rgb(56, 189, 248)',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                ticks: { stepSize: 1, color: 'rgba(255,255,255,0.5)' },
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            },
+                            x: {
+                                ticks: { color: 'rgba(255,255,255,0.5)' },
+                                grid: { display: false }
+                            }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+        
+        function renderTopQueries(topQueries) {
+            const container = document.getElementById('top-queries-container');
+            if (topQueries && topQueries.length) {
+                container.innerHTML = `
+                    <div class="glass-panel" id="top-queries-section" style="margin-top: 1rem;">
+                        <div class="panel-header">
+                            <h3>Top Recent Queries</h3>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            ${topQueries.map(q => `<div style="padding: 0.75rem; background: rgba(255,255,255,0.02); border-radius: 8px; border-left: 3px solid var(--accent);">${esc(q)}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = "";
+            }
+        }
+
+        async function loadAllUsers() {
+            const res = await fetch(API_BASE + "/admin-api/users", { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            
+            const tbody = document.getElementById("users-table-body");
+            tbody.innerHTML = "";
+            
+            if (!data.users || data.users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">No users found or service key missing.</td></tr>';
+                return;
+            }
+            data.users.forEach(u => {
+                const tr = document.createElement("tr");
+                const isPro = u.plan && u.plan !== 'free';
+                tr.innerHTML = `
+                    <td>${u.email}</td>
+                    <td><span class="badge ${isPro ? 'pro' : 'free'}">${u.plan || 'Free'}</span></td>
+                    <td><strong style="color:var(--accent)">${u.credits_remaining ?? 0}</strong><span style="color:var(--muted); font-size:0.8rem"> tokens</span></td>
+                    <td><strong style="color: ${u.history_count > 0 ? 'var(--accent)' : 'var(--muted)'}">${u.history_count || 0}</strong></td>
+                    <td style="color:var(--muted); font-size:0.8rem">${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <button type="button" class="btn btn-primary" onclick="viewUser('${u.id}', '${u.email}', '${u.plan||'free'}', ${u.credits_remaining ?? 0}, ${u.history_count || 0})">View</button>
+                        <button type="button" class="btn btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="openSuspendModal('${u.id}', '${u.email}')">Restrict</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteUser('${u.id}', '${u.email}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadQueries(queries = null) { // Modified to fetch if queries are not provided
+            let dataQueries = queries;
+            if (!dataQueries) {
+                try {
+                    const res = await fetch(API_BASE + "/admin-api/dashboard-stats", { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (!res.ok) throw new Error("Failed to fetch queries");
+                    const data = await res.json();
+                    dataQueries = data.recent_queries;
+                } catch (e) {
+                    console.error("Error fetching queries:", e);
+                    dataQueries = [];
+                }
+            }
+
+            const tbody = document.getElementById("queries-table-body");
+            if (!dataQueries || dataQueries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">No global queries found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = dataQueries.map(q => `
+                <tr>
+                    <td style="color:var(--muted); font-size: 0.8rem;">${q.user_id ? q.user_id.split('-')[0] : 'ANON'}...</td>
+                    <td style="color:var(--text); max-width: 400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(q.query)}">${esc(q.query)}</td>
+                    <td><span class="badge free">${q.format || 'detailed'}</span></td>
+                    <td style="color:var(--muted); font-size:0.8rem">${new Date(q.created_at).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function viewUser(id, email, plan, credits) {
+            document.getElementById('modal').style.display = 'flex';
+            document.getElementById('modal-title').innerText = `Inspector: ${email}`;
+            document.getElementById('modal-email').innerText = email;
+            document.getElementById('modal-id').innerText = id;
+            document.getElementById('modal-credits').innerText = credits;
+            
+            const badge = document.getElementById('modal-plan');
+            badge.innerText = plan;
+            badge.className = `badge ${plan === 'free' ? 'free' : 'pro'}`;
+
+            // Fetch specific history
+            const histUl = document.getElementById('modal-history');
+            histUl.innerHTML = "<p style='color:var(--muted); font-size: 0.8rem;'>Loading tracking data...</p>";
+            
+            try {
+            const res = await fetch(`${API_BASE}/admin-api/users/${id}/history?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const dat = await res.json();
+                
+                document.getElementById('history-limit').innerText = dat.limit;
+                document.getElementById('history-count').innerText = dat.history.length;
+                
+                if(dat.history.length === 0) {
+                    histUl.innerHTML = "<li style='color:var(--muted); font-size: 0.8rem;'>No queries logged for this user.</li>";
+                } else {
+                    histUl.innerHTML = dat.history.map(h => `
+                        <li style="background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+                            <p style="color: var(--text); font-size: 0.85rem; margin-bottom: 4px;">[${h.format ? h.format.toUpperCase() : 'N/A'}]</p>
+                            <p style="font-size: 0.9rem;">${esc(h.query)}</p>
+                            <p style="color: var(--muted); font-size: 0.75rem; margin-top: 4px;">${new Date(h.created_at).toLocaleString()}</p>
+                        </li>
+                    `).join('');
+                }
+            } catch(e) {
+                histUl.innerHTML = "<li style='color:var(--danger);'>Failed to fetch history</li>";
+            }
+        }
+
+        async function deleteUser(id, email) {
+            if(!confirm(`PERMANENT DATA REMOVAL\n\nAre you sure you want to completely erase ${email} and all associated data from the platform? This action is irreversible.`)) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/users/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if(!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+                alert('User erased from system.');
+                loadAllUsers();
+                checkAuthAndLoad(); // Refresh stats
+            } catch(e) {
+                alert("Error deleting user: " + e.message);
+            }
+        }
+
+        async function loadAdminRegistry() {
+            try {
+                const res = await fetch(API_BASE + "/admin-api/registry", { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                
+                const tbody = document.getElementById("admin-table-body");
+                tbody.innerHTML = data.admins.map(a => `
+                    <tr>
+                        <td style="color:var(--muted); font-size: 0.8rem;">${a.id}</td>
+                        <td style="color:var(--accent); font-weight: 600;">${a.email}</td>
+                        <td style="color:var(--muted); font-size: 0.8rem;">${new Date(a.created_at).toLocaleString()}</td>
+                        <td>
+                            ${a.email !== currentAdminEmail 
+                                ? `<button type="button" class="btn btn-danger" onclick="revokeAdmin('${a.id}', '${a.email}')">Revoke</button>`
+                                : `<span class="badge pro">You</span>`
+                            }
+                        </td>
+                    </tr>
+                `).join('');
+            } catch(e) { console.error("Could not load registry", e); }
+        }
+
+        async function addAdminAccess() {
+            const input = document.getElementById("new-admin-email");
+            const email = input.value.trim();
+            if (!email) return;
+
+            try {
+                const res = await fetch(API_BASE + "/admin-api/registry", {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if(!res.ok) throw new Error(data.detail);
+                
+                input.value = "";
+                alert(data.message);
+                loadAdminRegistry();
+            } catch(e) {
+                alert("Error granting access: " + e.message);
+            }
+        }
+
+        async function revokeAdmin(id, email) {
+            if(!confirm(`ADMIN ACCESS REVOCATION\n\nRevoke Admin clearance for ${email}? They will be immediately locked out of the Terminal.`)) return;
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/registry/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if(!res.ok) throw new Error(data.detail);
+                alert(data.message);
+                loadAdminRegistry();
+            } catch(e) {
+                alert("Could not revoke: " + e.message);
+            }
+        }
+
+        async function loadRefundRequests() {
+            try {
+                const res = await fetch(API_BASE + "/admin-api/refunds", { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                renderRefunds(data.refunds || []);
+            } catch (err) { console.error("Refunds load failed", err); }
+        }
+
+        function renderRefunds(refunds) {
+            const tbody = document.getElementById('refunds-table-body');
+            if (refunds.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted)">No refund requests.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = refunds.map(r => `
+                <tr>
+                    <td><span class="badge ${r.status === 'refunded' ? 'pro' : 'free'}">${r.status.toUpperCase()}</span></td>
+                    <td style="font-family: monospace;">${r.email}</td>
+                    <td style="color:var(--accent2); font-weight:700;">₹${r.refund_amount}</td>
+                    <td style="color: var(--muted); font-size: 0.8rem;">${new Date(r.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <button type="button" class="btn btn-ghost" style="padding:4px 8px; font-size:0.75rem;" onclick="inspectRefund('${r.id}')">Process</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function inspectRefund(id) {
+            try {
+                const res = await fetch(API_BASE + "/admin-api/refunds", { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                const r = data.refunds.find(x => x.id === id);
+                if (!r) return;
+
+                activeRefundId = id;
+                document.getElementById('modal-refund').style.display = 'flex';
+                
+                const detailsDiv = document.getElementById('refund-details');
+                const s = r.survey_results || {};
+                detailsDiv.innerHTML = `
+                    <div style="background:rgba(255,255,255,0.02); padding:15px; border-radius:10px; border:1px solid var(--border);">
+                        <p><strong>User:</strong> ${r.email}</p>
+                        <p><strong>Refund Amount:</strong> ₹${r.refund_amount}</p>
+                        <p><strong>Plan Cancelled:</strong> ${r.plan}</p>
+                        
+                        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+                            <p style="color:var(--accent); font-weight:600; margin-bottom:8px;">Cancellation Survey:</p>
+                            <p style="font-size:0.85rem;"><strong>Region:</strong> ${s.region || 'N/A'}</p>
+                            <p style="font-size:0.85rem;"><strong>Reason:</strong> ${s.reason || 'N/A'}</p>
+                            <p style="font-size:0.85rem;"><strong>Accuracy:</strong> ${s.rating || '0'}/5</p>
+                            <p style="font-size:0.85rem;"><strong>Future Return:</strong> ${s.will_return || 'N/A'}</p>
+                            <p style="font-size:0.85rem;"><strong>Feature Request:</strong> ${s.feature_request || 'None'}</p>
+                        </div>
+
+                        <p style="margin-top:15px; color:var(--accent); font-weight:600;">Bank/UPI Details:</p>
+                        <pre style="background:#000; padding:10px; border-radius:5px; margin-top:5px; font-size:0.85rem; color:var(--text); white-space:pre-wrap;">${esc(r.bank_details.raw || JSON.stringify(r.bank_details))}</pre>
+                    </div>
+                `;
+
+                // Try to extract UPI ID for QR
+                let upiId = "";
+                const raw = r.bank_details.raw || "";
+                const upiMatch = raw.match(/[a-zA-Z0-9.\-_]+@[a-zA-Z]+/);
+                if (upiMatch) upiId = upiMatch[0];
+
+                const paySection = document.getElementById('refund-pay-section');
+                if (r.status === 'refunded') {
+                    paySection.innerHTML = `<p style="color:var(--accent); font-weight:600;">✅ REFUNDED (Ref: ${r.transaction_id})</p>`;
+                } else {
+                    paySection.style.display = 'block';
+                    if (upiId) {
+                        const upiUrl = `upi://pay?pa=${upiId}&pn=Refund&am=${r.refund_amount}&tn=Refund_${r.id.split('-')[0]}`;
+                        document.getElementById('refund-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
+                        document.getElementById('refund-qr-img').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('refund-qr-img').style.display = 'none';
+                    }
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function closeRefundModal() { document.getElementById('modal-refund').style.display = 'none'; }
+
+        async function confirmRefundComplete() {
+            const trId = document.getElementById('refund-tr-id').value.trim();
+            if (!trId) { alert("Enter Transaction ID"); return; }
+
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/refunds/${activeRefundId}/complete`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transaction_id: trId })
+                });
+                if (res.ok) {
+                    alert("Refund marked as completed.");
+                    closeRefundModal();
+                    loadRefundRequests();
+                } else {
+                    const d = await res.json();
+                    alert("Error: " + d.detail);
+                }
+            } catch (err) { alert(err.message); }
+        }
+
+        async function loadPendingPayments() {
+            try {
+                const res = await fetch(API_BASE + "/admin-api/payments/pending", { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                renderPendingPayments(data.payments || []);
+            } catch (err) { console.error("Payments load failed", err); }
+        }
+
+        function renderPendingPayments(payments) {
+            const tbody = document.getElementById('payments-table-body');
+            const badge = document.getElementById('payment-badge-admin');
+            if (badge) {
+                badge.innerText = payments.length;
+                badge.style.display = payments.length > 0 ? 'inline-block' : 'none';
+            }
+
+            if (payments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted)">No pending payments to verify.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = payments.map(p => `
+                <tr>
+                    <td style="font-family: monospace;">${p.email}</td>
+                    <td><span class="badge pro">${p.plan.toUpperCase()}</span></td>
+                    <td style="color:var(--accent); font-weight:700;">₹${p.amount}</td>
+                    <td style="font-family: 'JetBrains Mono'; color:var(--accent2);">${p.utr_number || 'N/A'}</td>
+                    <td style="color: var(--muted); font-size: 0.8rem;">${relTime(p.submitted_at)}</td>
+                    <td>
+                        <button type="button" class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="approvePayment('${p.order_id}')">Approve</button>
+                        <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="rejectPayment('${p.order_id}')">Reject</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function approvePayment(orderId) {
+            if(!confirm("Verify this payment? Credits will be added to the user's account immediately.")) return;
+            // Sanitize ID for Safari stability
+            const cleanId = (orderId || "").trim();
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/payments-approve-v2`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ order_id: cleanId })
+                });
+                if (res.ok) {
+                    alert("Payment approved and credits awarded successfully.");
+                    loadPendingPayments();
+                } else {
+                    const d = await res.json();
+                    alert("System error: " + (d.detail || JSON.stringify(d)));
+                }
+            } catch (err) { alert("Approve failed: " + err.message); }
+        }
+
+        async function rejectPayment(orderId) {
+            const reason = prompt("Enter rejection reason (will be visible to user):", "Invalid or missing transaction reference.");
+            if (reason === null) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/payments-reject-v2`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ order_id: orderId, reason: reason })
+                });
+                if (res.ok) {
+                    alert("Payment request rejected.");
+                    loadPendingPayments();
+                } else {
+                    const d = await res.json();
+                    alert("System error: " + (d.detail || JSON.stringify(d)));
+                }
+            } catch (err) { alert("Reject failed: " + err.message); }
+        }
+
+        async function fetchTickets() {
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/support/tickets`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                renderTickets(data.tickets || []);
+            } catch (err) {
+                console.error("Fetch tickets failed", err);
+            }
+        }
+
+        function renderTickets(tickets) {
+            const tbody = document.getElementById('tickets-table-body');
+            const badge = document.getElementById('notif-badge-admin'); // Assuming this badge exists for ticket count
+            const pcount = tickets.filter(t => t.status === 'pending').length;
+            
+            // Update badge for pending tickets
+            if (badge) {
+                badge.innerText = pcount;
+                badge.style.display = pcount > 0 ? 'inline-block' : 'none';
+            }
+
+            if (tickets.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted)">No support requests found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = tickets.map(t => `
+                <tr>
+                    <td><span class="status-pill ${t.status}">${t.status.toUpperCase()}</span></td>
+                    <td style="font-family: monospace;">${t.email}</td>
+                    <td><span style="border:1px solid rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.75rem;">${t.category}</span></td>
+                    <td style="font-weight: 500;">${t.subject}</td>
+                    <td style="color: var(--text-muted); font-size: 0.8rem;">${relTime(t.created_at)}</td>
+                    <td>
+                        <button type="button" class="btn btn-ghost" style="padding:4px 8px; font-size:0.75rem;" onclick="openTicketModal('${t.id}')">Inspect & Reply</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function openTicketModal(id) {
+            document.getElementById('modal-ticket').style.display = 'flex';
+            document.getElementById('ticket-details').innerHTML = '<p>Loading ticket info...</p>';
+            document.getElementById('btn-reply-send').disabled = true;
+            document.getElementById('reply-status').style.display = 'none';
+            document.getElementById('reply-text').value = ''; // Clear previous reply text
+            document.getElementById('reply-section').style.display = 'block'; // Ensure reply section is visible
+
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/support/tickets`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const ticket = data.tickets.find(t => t.id === id);
+                if (!ticket) return;
+
+                currentTicketId = ticket.id;
+                currentTicketUser = ticket.user_id;
+
+                document.getElementById('ticket-details').innerHTML = `
+                    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+                            <strong>Category: ${ticket.category.toUpperCase()}</strong>
+                            <span style="color: var(--text-muted); font-size: 0.8rem;">Submitted ${new Date(ticket.created_at).toLocaleString()}</span>
+                        </div>
+                        <div style="font-size: 1.1rem; color: var(--text); margin-bottom: 15px;">${ticket.subject}</div>
+                        <div style="white-space: pre-wrap; color: var(--text); line-height: 1.6;">${esc(ticket.description)}</div>
+                    </div>
+                `;
+                
+                if (ticket.status === 'resolved') {
+                    document.getElementById('reply-section').innerHTML = `
+                        <div style="background: rgba(79, 255, 176, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(79, 255, 176, 0.2); margin-top: 10px;">
+                            <h4 style="color: var(--text); margin-top: 0;">Response Sent:</h4>
+                            <p style="white-space: pre-wrap; font-size: 0.9rem;">${esc(ticket.admin_response)}</p>
+                        </div>
+                        <button type="button" class="btn btn-ghost" style="margin-top: 20px; width: 100%;" onclick="closeTicketModal()">Close View</button>
+                    `;
+                } else {
+                    // Reset reply section for active tickets
+                    document.getElementById('reply-section').innerHTML = `
+                        <textarea id="reply-text" class="form-input" placeholder="Type your response here..." rows="5" style="margin-bottom: 10px;"></textarea>
+                        <div id="reply-status" style="font-size: 0.85rem; margin-bottom: 10px; display: none;"></div>
+                        <button type="button" class="btn btn-primary" id="btn-reply-send" style="width: 100%;" onclick="sendTicketReply()">Send Response & Resolve</button>
+                    `;
+                    document.getElementById('btn-reply-send').disabled = false;
+                }
+            } catch (err) {
+                console.error("Modal load failed", err);
+            }
+        }
+
+        async function sendTicketReply() {
+            const text = document.getElementById('reply-text').value.trim();
+            const btn = document.getElementById('btn-reply-send');
+            const statusBox = document.getElementById('reply-status');
+
+            if (!text) { alert("Please enter a response."); return; }
+
+            btn.disabled = true;
+            btn.innerText = "Dispatching Response...";
+
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/support/tickets/${currentTicketId}/reply`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ response: text })
+                });
+
+                if (res.ok) {
+                    statusBox.innerHTML = "Response sent to user email and hub.";
+                    statusBox.style.color = "var(--accent)";
+                    statusBox.style.display = "block";
+                    setTimeout(() => { closeTicketModal(); fetchTickets(); }, 2000);
+                } else {
+                    statusBox.innerHTML = "Failed to send response.";
+                    statusBox.style.color = "var(--danger)";
+                    statusBox.style.display = "block";
+                    btn.disabled = false;
+                    btn.innerText = "Send Response & Resolve";
+                }
+            } catch (err) { alert(err.message); }
+        }
+
+        function closeTicketModal() {
+            document.getElementById('modal-ticket').style.display = 'none';
+        }
+
+        function relTime(iso) {
+            const d = new Date(iso);
+            const now = new Date();
+            const diff = (now - d) / 1000;
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+            return `${Math.floor(diff/86400)}d ago`;
+        }
+
+        function switchTab(tabId) {
+            // Update UI elements
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(`${tabId}-section`).style.display = 'block';
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Trigger data load
+            if (tabId === 'dashboard') checkAuthAndLoad(); // Re-use existing dashboard load
+            if (tabId === 'users') loadAllUsers();
+            if (tabId === 'queries') loadQueries();
+            if (tabId === 'registry') loadAdminRegistry();
+            if (tabId === 'compliance') fetchTickets();
+            if (tabId === 'refunds') loadRefundRequests();
+            if (tabId === 'payments') loadPendingPayments();
+            if (tabId === 'config') loadPlatformConfig();
+            if (tabId === 'announcements') { loadTickerConfig(); loadDiscountConfig(); }
+            if (tabId === 'suspensions') loadSuspensions();
+            if (tabId === 'appeals') loadAppeals();
+            if (tabId === 'certificates') loadCertificates();
+        }
+
+        async function loadPlatformConfig() {
+            try {
+                const res = await fetch(API_BASE + "/admin-api/config", { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                
+                document.getElementById('cfg-system-instruction').value = data.system_instruction || '';
+                document.getElementById('cfg-image-gen').checked = data.image_generation === true;
+                document.getElementById('cfg-min-citations').value = data.min_citations || 3;
+                document.getElementById('cfg-maint-mode').checked = data.maintenance_mode === true;
+                document.getElementById('cfg-broadcast').value = data.broadcast_message || '';
+                document.getElementById('cfg-free-credits').value = data.daily_free_credits || 5;
+                document.getElementById('cfg-blacklist').value = JSON.stringify(data.blacklisted_terms || []);
+                document.getElementById('cfg-http-ratelimit').value = data.http_rate_limit || 120;
+                document.getElementById('cfg-ws-ratelimit').value = data.ws_rate_limit || 8;
+                
+            } catch (e) { console.error("Config load error:", e); }
+        }
+
+        // ── TICKER / ANNOUNCEMENTS ──────────────────────────────────────────
+        let _tickerStyle = 'info', _tickerSpeed = 'normal';
+
+        async function loadTickerConfig() {
+            try {
+                const res = await fetch(API_BASE + "/admin-api/config", { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                document.getElementById('ticker-text-input').value   = data.ticker_text    || '';
+                document.getElementById('ticker-enabled-chk').checked = data.ticker_enabled === true || data.ticker_enabled === 'true';
+                _tickerStyle = data.ticker_style || 'info';
+                _tickerSpeed = data.ticker_speed || 'normal';
+                selectTickerStyle(_tickerStyle, false);
+                selectTickerSpeed(_tickerSpeed, false);
+                updateTickerPreview();
+            } catch(e) { console.error('Ticker config load error:', e); }
+        }
+
+        function selectTickerStyle(style, preview=true) {
+            _tickerStyle = style;
+            const styles = ['info','promo','warning','success'];
+            const bgs    = { info:'rgba(56,189,248,.13)', promo:'rgba(139,92,246,.13)', warning:'rgba(245,158,11,.13)', success:'rgba(16,185,129,.13)' };
+            const borders = { info:'rgba(56,189,248,.6)', promo:'rgba(139,92,246,.6)', warning:'rgba(245,158,11,.6)', success:'rgba(16,185,129,.6)' };
+            styles.forEach(s => {
+                const btn = document.getElementById(`stbtn-${s}`);
+                if (!btn) return;
+                if (s === style) {
+                    btn.style.background = bgs[s];
+                    btn.style.borderColor = borders[s];
+                    btn.style.borderWidth = '2px';
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.borderWidth = '1px';
+                    btn.style.borderColor = 'var(--border)';
+                }
+            });
+            document.getElementById('tkstat-style').textContent = style.charAt(0).toUpperCase() + style.slice(1);
+            if (preview) updateTickerPreview();
+        }
+
+        function selectTickerSpeed(speed, preview=true) {
+            _tickerSpeed = speed;
+            const speeds = ['slow','normal','fast'];
+            speeds.forEach(s => {
+                const btn = document.getElementById(`spbtn-${s}`);
+                if (!btn) return;
+                if (s === speed) {
+                    btn.style.borderWidth = '2px';
+                    btn.style.borderColor = 'var(--accent)';
+                    btn.style.background  = 'var(--accent-glow)';
+                    btn.style.color       = 'var(--accent)';
+                    btn.style.fontWeight  = '700';
+                } else {
+                    btn.style.borderWidth = '1px';
+                    btn.style.borderColor = 'var(--border)';
+                    btn.style.background  = 'transparent';
+                    btn.style.color       = 'var(--text-secondary)';
+                    btn.style.fontWeight  = '400';
+                }
+            });
+            document.getElementById('tkstat-speed').textContent = speed.charAt(0).toUpperCase() + speed.slice(1);
+            if (preview) updateTickerPreview();
+        }
+
+        function updateTickerPreview() {
+            const text    = document.getElementById('ticker-text-input').value || 'Your announcement will scroll here...';
+            const enabled = document.getElementById('ticker-enabled-chk').checked;
+            const durMap  = { slow:'45s', normal:'28s', fast:'14s' };
+            const iconMap = { info:'📢', promo:'🎉', warning:'⚠️', success:'✅' };
+            const lblMap  = { info:'LIVE', promo:'PROMO', warning:'ALERT', success:'UPDATE' };
+            const clrMap  = {
+                info:    { bg:'rgba(56,189,248,.07)',  border:'rgba(56,189,248,.35)',  label:'#38bdf8', text:'#e0f2fe', lborder:'rgba(56,189,248,.3)'  },
+                promo:   { bg:'rgba(139,92,246,.07)', border:'rgba(139,92,246,.35)', label:'#a78bfa', text:'#ede9fe', lborder:'rgba(139,92,246,.3)' },
+                warning: { bg:'rgba(245,158,11,.07)', border:'rgba(245,158,11,.35)', label:'#f59e0b', text:'#fef3c7', lborder:'rgba(245,158,11,.3)' },
+                success: { bg:'rgba(16,185,129,.07)', border:'rgba(16,185,129,.35)', label:'#10b981', text:'#d1fae5', lborder:'rgba(16,185,129,.3)' },
+            };
+            const c = clrMap[_tickerStyle] || clrMap.info;
+            const safeText = text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+            document.getElementById('ticker-preview-wrap').innerHTML = `
+                <div style="display:flex;align-items:center;border-radius:10px;overflow:hidden;height:44px;border:1px solid ${c.border};background:${c.bg};">
+                    <div style="padding:0 12px;font-size:.62rem;font-weight:800;letter-spacing:.12em;white-space:nowrap;border-right:1px solid ${c.lborder};height:100%;display:flex;align-items:center;gap:5px;color:${c.label};">
+                        ${iconMap[_tickerStyle]} ${lblMap[_tickerStyle]}
+                    </div>
+                    <div style="flex:1;overflow:hidden;height:100%;display:flex;align-items:center;">
+                        <div style="display:inline-flex;white-space:nowrap;animation:tickerScroll ${durMap[_tickerSpeed]||'28s'} linear infinite;">
+                            <span style="font-size:.85rem;font-weight:500;padding:0 60px 0 18px;color:${c.text};">${safeText}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                            <span style="font-size:.85rem;font-weight:500;padding:0 60px 0 18px;color:${c.text};">${safeText}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                        </div>
+                    </div>
+                    <span style="padding:0 12px;opacity:0.4;color:white;">✕</span>
+                </div>`;
+
+            // Status badge
+            const el = document.getElementById('tkstat-enabled');
+            if (enabled) { el.textContent = '● Live'; el.style.color = 'var(--success)'; }
+            else         { el.textContent = '● Off';  el.style.color = 'var(--danger)'; }
+
+            // Inject keyframe for preview if not already present
+            if (!document.getElementById('ticker-preview-style')) {
+                const s = document.createElement('style');
+                s.id = 'ticker-preview-style';
+                s.textContent = '@keyframes tickerScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }';
+                document.head.appendChild(s);
+            }
+        }
+
+        async function saveTickerConfig(btn) {
+            const orig = btn.innerText;
+            btn.innerText = 'Publishing...';
+            btn.disabled = true;
+            const statusEl = document.getElementById('ticker-save-status');
+            statusEl.style.display = 'none';
+
+            try {
+                const payload = {
+                    ticker_text:    document.getElementById('ticker-text-input').value.trim(),
+                    ticker_enabled: document.getElementById('ticker-enabled-chk').checked,
+                    ticker_style:   _tickerStyle,
+                    ticker_speed:   _tickerSpeed
+                };
+                const res = await fetch(API_BASE + '/admin-api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    statusEl.style.color = 'var(--success)';
+                    statusEl.textContent = '✅ Announcement published! Users will see it on next page load.';
+                } else { throw new Error('Save failed'); }
+            } catch(e) {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = '❌ Failed to publish. Check connectivity.';
+            } finally {
+                statusEl.style.display = 'block';
+                btn.innerText = orig;
+                btn.disabled = false;
+            }
+        }
+
+        // ── DISCOUNT OFFERS ────────────────────────────────────────────────────
+        let _discountPct = 0;
+        const _builtInPlans = [
+            { id: 'student',    name: 'Student',    price: 49,  credits: 50  },
+            { id: 'researcher', name: 'Researcher', price: 99,  credits: 120 }
+        ];
+        let _customPlans = [];
+
+        function setDiscount(pct) {
+            _discountPct = pct;
+            document.getElementById('disc-custom-input').value = pct || '';
+            // Highlight active button
+            [5,10,15,20,25,50].forEach(v => {
+                const btn = document.getElementById(`disc-${v}`);
+                if (!btn) return;
+                if (v === pct) {
+                    btn.style.background = 'rgba(16,185,129,.15)';
+                    btn.style.borderColor = '#10b981';
+                    btn.style.color = '#10b981';
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.borderColor = 'var(--border)';
+                    btn.style.color = 'var(--text-secondary)';
+                }
+            });
+            renderDiscountPreview();
+        }
+
+        function renderDiscountPreview() {
+            const pct     = _discountPct || 0;
+            const enabled = document.getElementById('disc-enabled-chk').checked;
+            const allPlans = [..._builtInPlans, ..._customPlans];
+            document.getElementById('discstat-pct').textContent    = `${pct}% off`;
+            const el = document.getElementById('discstat-active');
+            if (enabled) { el.textContent = '● Live'; el.style.color = 'var(--success)'; }
+            else         { el.textContent = '● Off';  el.style.color = 'var(--danger)'; }
+
+            document.getElementById('disc-preview').innerHTML = allPlans.map(p => {
+                const orig     = p.price;
+                const discounted = enabled && pct > 0 ? Math.round(orig * (1 - pct/100)) : orig;
+                return `
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            padding:14px 18px;border-radius:10px;border:1px solid var(--border);
+                            background:rgba(255,255,255,.02);">
+                    <div>
+                        <div style="font-weight:700;font-size:.9rem;">${esc(p.name)}</div>
+                        <div style="font-size:.75rem;color:var(--text-muted);">${p.credits} credits</div>
+                    </div>
+                    <div style="text-align:right;">
+                        ${enabled && pct > 0 ? `<div style="text-decoration:line-through;color:var(--text-muted);font-size:.8rem;">₹${orig}</div>` : ''}
+                        <div style="font-size:1.1rem;font-weight:800;color:${enabled&&pct>0?'#10b981':'inherit'};">₹${discounted}</div>
+                        ${enabled && pct > 0 ? `<div style="font-size:.68rem;background:rgba(16,185,129,.15);color:#10b981;border-radius:4px;padding:2px 6px;">${pct}% OFF</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function saveDiscountConfig(btn) {
+            const orig = btn.innerText;
+            btn.innerText = 'Saving...'; btn.disabled = true;
+            const statusEl = document.getElementById('disc-save-status');
+            statusEl.style.display = 'none';
+            try {
+                const payload = {
+                    discount_percent: _discountPct,
+                    discount_enabled: document.getElementById('disc-enabled-chk').checked,
+                    discount_label:   document.getElementById('disc-label-input').value.trim()
+                };
+                const res = await fetch(API_BASE + '/admin-api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+                statusEl.textContent = res.ok ? '✅ Discount saved! Visible on upgrade page instantly.' : '❌ Save failed.';
+            } catch(e) {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = '❌ Network error.';
+            } finally {
+                statusEl.style.display = 'block';
+                btn.innerText = orig; btn.disabled = false;
+            }
+        }
+
+        // ── PLAN BUILDER ───────────────────────────────────────────────────────
+        function renderAllPlansTable() {
+            const tbody = document.getElementById('all-plans-table');
+            const rows = [
+                ..._builtInPlans.map(p => `
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:10px 6px;font-weight:600;">${esc(p.name)}</td>
+                        <td style="padding:10px 6px;">₹${p.price}</td>
+                        <td style="padding:10px 6px;">${p.credits}</td>
+                        <td style="padding:10px 6px;"><span style="font-size:.7rem;background:rgba(56,189,248,.1);color:#38bdf8;padding:2px 8px;border-radius:4px;">Built-in</span></td>
+                        <td style="padding:10px 6px;"></td>
+                    </tr>`),
+                ..._customPlans.map(p => `
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:10px 6px;font-weight:600;">${esc(p.name)}</td>
+                        <td style="padding:10px 6px;">₹${p.price}</td>
+                        <td style="padding:10px 6px;">${p.credits}</td>
+                        <td style="padding:10px 6px;"><span style="font-size:.7rem;background:rgba(139,92,246,.1);color:#a78bfa;padding:2px 8px;border-radius:4px;">Custom</span></td>
+                        <td style="padding:10px 6px;"><button onclick="deleteCustomPlan('${esc(p.id)}')" style="background:rgba(239,68,68,.1);color:var(--danger);border:none;cursor:pointer;padding:4px 10px;border-radius:6px;font-size:.8rem;">🗑</button></td>
+                    </tr>`)
+            ];
+            tbody.innerHTML = rows.join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">No plans yet.</td></tr>';
+        }
+
+        async function addCustomPlan() {
+            const id      = document.getElementById('plan-id-input').value.trim();
+            const name    = document.getElementById('plan-name-input').value.trim();
+            const price   = parseInt(document.getElementById('plan-price-input').value);
+            const credits = parseInt(document.getElementById('plan-credits-input').value);
+            const desc    = document.getElementById('plan-desc-input').value.trim();
+            const statusEl = document.getElementById('plan-builder-status');
+
+            if (!id || !name || !price || !credits) {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = '❌ All fields except description are required.';
+                statusEl.style.display = 'block'; return;
+            }
+            if (_builtInPlans.find(p => p.id === id) || _customPlans.find(p => p.id === id)) {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = '❌ Plan ID already exists. Choose a unique ID.';
+                statusEl.style.display = 'block'; return;
+            }
+
+            _customPlans.push({ id, name, price, credits, description: desc });
+            await _saveCustomPlans(statusEl, '✅ Plan added! It will appear on the upgrade page.');
+            renderAllPlansTable();
+            renderDiscountPreview();
+            // Clear form
+            ['plan-id-input','plan-name-input','plan-price-input','plan-credits-input','plan-desc-input'].forEach(id => document.getElementById(id).value='');
+        }
+
+        async function deleteCustomPlan(planId) {
+            if (!confirm(`Remove custom plan "${planId}"?`)) return;
+            _customPlans = _customPlans.filter(p => p.id !== planId);
+            const statusEl = document.getElementById('plan-builder-status');
+            await _saveCustomPlans(statusEl, '✅ Plan removed.');
+            renderAllPlansTable();
+            renderDiscountPreview();
+        }
+
+        async function _saveCustomPlans(statusEl, successMsg) {
+            try {
+                const res = await fetch(API_BASE + '/admin-api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ custom_plans: JSON.stringify(_customPlans) })
+                });
+                if (statusEl) {
+                    statusEl.style.color = res.ok ? 'var(--success)' : 'var(--danger)';
+                    statusEl.textContent = res.ok ? successMsg : '❌ Save failed.';
+                    statusEl.style.display = 'block';
+                }
+            } catch(e) {
+                if (statusEl) { statusEl.style.color='var(--danger)'; statusEl.textContent='❌ Network error.'; statusEl.style.display='block'; }
+            }
+        }
+
+        async function loadDiscountConfig() {
+            try {
+                const res  = await fetch(API_BASE + '/admin-api/config', { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                _discountPct = parseInt(data.discount_percent) || 0;
+                document.getElementById('disc-enabled-chk').checked = data.discount_enabled === true || data.discount_enabled === 'true';
+                document.getElementById('disc-label-input').value = data.discount_label || '';
+                document.getElementById('disc-custom-input').value = _discountPct || '';
+                setDiscount(_discountPct);
+                // Custom plans
+                try { _customPlans = JSON.parse(data.custom_plans || '[]'); } catch(e) { _customPlans = []; }
+                renderAllPlansTable();
+                renderDiscountPreview();
+            } catch(e) { console.error('Discount config load error:', e); }
+        }
+
+
+        async function savePlatformConfig(event) {
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            try {
+                const configs = {
+                    system_instruction: document.getElementById('cfg-system-instruction').value,
+                    image_generation: document.getElementById('cfg-image-gen').checked,
+                    min_citations: parseInt(document.getElementById('cfg-min-citations').value),
+                    maintenance_mode: document.getElementById('cfg-maint-mode').checked,
+                    broadcast_message: document.getElementById('cfg-broadcast').value,
+                    daily_free_credits: parseInt(document.getElementById('cfg-free-credits').value),
+                    blacklisted_terms: JSON.parse(document.getElementById('cfg-blacklist').value || "[]"),
+                    http_rate_limit: parseInt(document.getElementById('cfg-http-ratelimit').value),
+                    ws_rate_limit: parseInt(document.getElementById('cfg-ws-ratelimit').value)
+                };
+
+                const res = await fetch(API_BASE + "/admin-api/config", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(configs)
+                });
+                
+                if(res.ok) alert("Platform rules updated successfully.");
+                else {
+                    const errorData = await res.json();
+                    throw new Error(errorData.detail || "Unknown error");
+                }
+            } catch (e) { 
+                alert("Failed to update. Check JSON format in blacklist or verify server connectivity: " + e.message); 
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem("admin_token");
+            window.location.href = "/";
+        }
+
+        // ── SUSPENSION MANAGEMENT ────────────────────────────────────────────
+        let suspendTargetId = null;
+        let suspendTargetEmail = null;
+
+        function openSuspendModal(userId, email) {
+            suspendTargetId = userId;
+            suspendTargetEmail = email;
+            document.getElementById('suspend-target-email').innerText = email;
+            document.getElementById('suspend-reason').value = '';
+            document.getElementById('suspend-notes').value = '';
+            document.getElementById('modal-suspend').style.display = 'flex';
+        }
+
+        function closeSuspendModal() {
+            document.getElementById('modal-suspend').style.display = 'none';
+        }
+
+        async function executeSuspension() {
+            const reason = document.getElementById('suspend-reason').value;
+            if (!reason) { alert('Please select a violation category.'); return; }
+
+            if (!confirm(`CONFIRM SUSPENSION\n\nYou are about to SUSPEND ${suspendTargetEmail} for a duration of 3 days.\n\nThis will:\n• Revoke system credits\n• Block laboratory access\n• Send formal suspension notice\n\nProceed?`)) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/suspend-user`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: suspendTargetId,
+                        email: suspendTargetEmail,
+                        reason_code: reason,
+                        notes: document.getElementById('suspend-notes').value || null
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Suspension failed');
+
+                alert(`${suspendTargetEmail} has been restricted.\nExpires: ${data.expires_at?.split('T')[0]}`);
+                closeSuspendModal();
+                loadAllUsers();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function loadSuspensions() {
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/suspensions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                renderSuspensions(data.suspensions || []);
+            } catch (e) { console.error('Suspensions load failed', e); }
+        }
+
+        function renderSuspensions(suspensions) {
+            const tbody = document.getElementById('suspensions-table-body');
+            if (suspensions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--muted)">No records found.</td></tr>';
+                return;
+            }
+
+            const reasonLabels = {
+                abusive_language: 'Abusive Language',
+                misconduct: 'Misconduct',
+                inappropriate_content: 'Inappropriate Content',
+                fraud_attempt: 'Fraud',
+                tos_violation: 'TOS Violation'
+            };
+
+            // Sort: active bans first, then clean, then expired/revoked
+            const order = { active: 0, clean: 1, revoked: 2, expired: 3 };
+            suspensions.sort((a, b) => (order[a.status] ?? 4) - (order[b.status] ?? 4));
+
+            tbody.innerHTML = suspensions.map(s => {
+                const isActive = s.status === 'active' && s.expires_at && new Date(s.expires_at) > new Date();
+                const isClean = s.status === 'clean';
+
+                let statusClass, statusLabel;
+                if (isClean) { statusClass = 'pro'; statusLabel = 'CLEAN'; }
+                else if (isActive) { statusClass = 'active-ban'; statusLabel = 'ACTIVE'; }
+                else if (s.status === 'revoked') { statusClass = 'revoked'; statusLabel = 'REVOKED'; }
+                else { statusClass = 'expired'; statusLabel = 'EXPIRED'; }
+
+                const reasonCol = isClean ? '<span style="color:var(--muted)">—</span>' : (reasonLabels[s.reason_code] || s.reason_code || '—');
+                const adminCol = s.suspended_by || '<span style="color:var(--muted)">—</span>';
+                const expiresCol = s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '—';
+
+                let actionCol;
+                if (isActive) {
+                    actionCol = `<button type="button" class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="revokeSuspension('${s.id}')">Lift Ban</button>`;
+                } else if (isClean) {
+                    actionCol = `<button type="button" class="btn btn-danger" style="padding:6px 10px; font-size:0.75rem;" onclick="openSuspendModal('${s.user_id}', '${s.email}')">Restrict</button>`;
+                } else {
+                    actionCol = `<span style="color:var(--muted); font-size:0.8rem;">${statusLabel}</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+                        <td style="font-family:monospace;">${s.email}</td>
+                        <td>${reasonCol}</td>
+                        <td style="color:var(--muted); font-size:0.8rem;">${adminCol}</td>
+                        <td style="color:var(--muted); font-size:0.8rem;">${expiresCol}</td>
+                        <td>${actionCol}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function revokeSuspension(id) {
+            if (!confirm('Lift this suspension early? The user will be restored to the Free plan.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/suspensions/${id}/revoke`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Revoke failed');
+                alert(data.message);
+                loadSuspensions();
+                loadAppeals(); // refresh appeals in case one was tied to this
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        // --- Appeals Logic ---
+        async function loadAppeals() {
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/appeals`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                renderAppeals(data.appeals || []);
+            } catch (e) { console.error('Appeals load failed', e); }
+        }
+
+        function renderAppeals(appeals) {
+            const tbody = document.getElementById('appeals-table-body');
+            if (appeals.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem; color:var(--muted)">No appeals found.</td></tr>';
+                return;
+            }
+
+            // Sort: pending first
+            const order = { pending: 0, approved: 1, rejected: 2 };
+            appeals.sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
+
+            tbody.innerHTML = appeals.map(a => {
+                let statusClass, statusLabel;
+                if (a.status === 'pending') { statusClass = 'warning'; statusLabel = 'PENDING'; }
+                else if (a.status === 'approved') { statusClass = 'pro'; statusLabel = 'APPROVED'; }
+                else { statusClass = 'expired'; statusLabel = 'REJECTED'; } // expired is grey/reddish
+
+                let actionCol;
+                if (a.status === 'pending') {
+                    actionCol = `
+                        <button type="button" class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem; background: var(--success); color:black;" onclick="processAppeal('${a.id}', 'approved')">Approve</button>
+                        <button type="button" class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="processAppeal('${a.id}', 'rejected')">Reject</button>
+                    `;
+                } else {
+                    actionCol = `<span style="color:var(--muted); font-size:0.8rem;">Reviewed by ${a.reviewed_by}</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+                        <td style="font-family:monospace;">${a.email}</td>
+                        <td style="font-size:0.85rem; color:var(--muted); max-width: 300px; white-space: normal;">
+                            ${a.appeal_reason}
+                            ${a.admin_response ? `<div style="margin-top:4px; padding-top:4px; border-top:1px solid var(--border); color:var(--text); font-size:0.75rem;"><strong>Admin:</strong> ${a.admin_response}</div>` : ''}
+                        </td>
+                        <td style="color:var(--muted); font-size:0.8rem;">${new Date(a.created_at).toLocaleDateString()}</td>
+                        <td style="display:flex; gap:5px;">${actionCol}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function processAppeal(id, decision) {
+            const responseText = prompt(`Enter admin response to user for ${decision} appeal (will be emailed):`, decision === 'approved' ? 'Appeal approved. Your account has been restored.' : 'Appeal denied. The suspension remains in effect.');
+            if (responseText === null) return; // cancelled
+
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/appeals/${id}/process`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ decision: decision, admin_response: responseText })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Process failed');
+                alert(data.message);
+                loadAppeals();
+                loadSuspensions(); // Status of suspension might have changed
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+        /* Certificates & Verification Dashboard */
+        async function loadCertificates() {
+            const table = document.getElementById('certificates-table-body');
+            table.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-secondary);">Loading verification protocol data...</td></tr>';
+            
+            try {
+                const res = await fetch('/admin-api/payments/approved', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const data = await res.json();
+                renderCertificates(data.payments || []);
+            } catch (e) {
+                console.error(e);
+                table.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--danger);">Failed to load certificates.</td></tr>';
+            }
+        }
+
+        function renderCertificates(certs) {
+            const table = document.getElementById('certificates-table-body');
+            if (certs.length === 0) {
+                table.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-secondary);">No active certificates found.</td></tr>';
+                return;
+            }
+            
+            table.innerHTML = certs.map(c => `
+                <tr>
+                    <td><span class="badge badge-success">VERIFIED</span></td>
+                    <td><code style="color: var(--accent); font-weight: 700;">${c.order_id}</code></td>
+                    <td>${c.email}</td>
+                    <td style="text-transform: uppercase; font-size: 0.8rem; font-weight: 700;">${c.plan}</td>
+                    <td>${new Date(c.verified_at).toLocaleDateString()}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="/verify/${c.order_id}" target="_blank" class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Verify Hub</a>
+                            <button class="btn btn-success" onclick="downloadReceipt('${c.order_id}')" style="padding: 6px 12px; font-size: 11px;">Download PDF</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function downloadReceipt(orderId) {
+            try {
+                const res = await fetch(`/admin-api/receipts/${orderId}/download`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                if (!res.ok) throw new Error("Failed to generate PDF");
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Receipt_${orderId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                alert("Error downloading receipt: " + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

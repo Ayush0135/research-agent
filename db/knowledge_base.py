@@ -12,7 +12,7 @@ import asyncio
 import json
 from urllib.parse import urlparse
 from services.embedding_service import generate_embedding
-from db.supabase_client import get_supabase_client
+from db.supabase_client import get_supabase_client, with_supabase_retry
 
 
 # ── Retrieve: similar past research ─────────────────────────────────────────
@@ -26,6 +26,7 @@ async def recall_similar_research(query: str, user_id: str, threshold: float = 0
     try:
         query_emb = await generate_embedding(query)
 
+        @with_supabase_retry
         def _query():
             sb = get_supabase_client()
             result = sb.rpc("match_research_memory", {
@@ -41,6 +42,7 @@ async def recall_similar_research(query: str, user_id: str, threshold: float = 0
         # Increment access_count for recalled memories
         if memories:
             ids = [m["id"] for m in memories]
+            @with_supabase_retry
             def _update():
                 sb = get_supabase_client()
                 for mid in ids:
@@ -64,6 +66,7 @@ async def recall_knowledge_chunks(query: str, threshold: float = 0.75, limit: in
     """
     try:
         query_emb = await generate_embedding(query)
+        @with_supabase_retry
         def _query():
             sb = get_supabase_client()
             return sb.rpc("match_document_chunks", {
@@ -109,6 +112,7 @@ async def memorize_research(
             for s in ranked_sources[:5]
         ]
 
+        @with_supabase_retry
         def _insert():
             sb = get_supabase_client()
             response = sb.table("research_memory").insert({
@@ -157,6 +161,7 @@ async def _update_source_quality(sources: list[dict], result_quality: float):
     Domains that appear in high-quality results get higher trust scores.
     """
     try:
+        @with_supabase_retry
         def _upsert():
             sb = get_supabase_client()
             for src in sources:
@@ -193,6 +198,7 @@ async def _update_source_quality(sources: list[dict], result_quality: float):
 async def get_trusted_domains(top_n: int = 10) -> list[dict]:
     """Returns top trusted source domains sorted by trust score * usage."""
     try:
+        @with_supabase_retry
         def _fetch():
             sb = get_supabase_client()
             return sb.table("source_quality") \

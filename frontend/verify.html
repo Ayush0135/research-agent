@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Receipt | Surefact</title>
+    <style>
+        :root {
+            --primary: #00ffa3;
+            --secondary: #1e293b;
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --success: #10b981;
+            --card-bg: rgba(30, 41, 59, 0.7);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: white;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            height: 32px;
+            border-radius: 6px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 24px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            margin: 0 0 10px;
+            font-weight: 800;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-bottom: 40px;
+        }
+
+        .details {
+            text-align: left;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .value {
+            font-weight: 600;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .footer {
+            font-size: 0.75rem;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .not-found {
+            color: #f43f5e;
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px dashed rgba(244, 63, 94, 0.3);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-verify {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .btn-verify:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .landing-hero {
+            padding: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="logo">
+            <img src="/static/surefact_logo.png" alt="Surefact"> Surefact
+        </a>
+
+        {% if verified %}
+        <div class="status-badge">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Authenticity Verified
+        </div>
+
+        {% if type == 'document' %}
+        <h1>Authentic Research Certificate</h1>
+        <p class="subtitle">Official Document Record found in our system.</p>
+
+        <div class="details">
+            <div class="detail-row">
+                <span class="label">Document Title</span>
+                <span class="value">{{ title }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Author Email</span>
+                <span class="value">{{ email }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Author Account</span>
+                <span class="value" style="color: {{ '#10b981' if is_active else '#f43f5e' }}; text-transform: uppercase;">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ '#10b981' if is_active else '#f43f5e' }};margin-right:6px;"></span>
+                    {{ 'ACTIVE' if is_active else 'SUSPENDED' }} ({{ plan|upper }})
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Verify Date</span>
+                <span class="value">{{ date }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Reference ID</span>
+                <span class="value" style="font-family: monospace;">{{ order_id }}</span>
+            </div>
+            {% if pdf_url %}
+            <div style="margin-top:20px;">
+                <a href="{{ pdf_url }}" download class="btn-verify" style="text-decoration:none; display:inline-block; width:100%; text-align:center; box-sizing:border-box;">📥 Download Original PDF</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% else %}
+        <h1>Receipt Validated</h1>
+        <p class="subtitle">Official transaction record found in our system.</p>
+
+        <div class="details">
+            <div class="detail-row">
+                <span class="label">Plan Name</span>
+                <span class="value" style="text-transform: uppercase;">{{ plan }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Issued To</span>
+                <span class="value">{{ email }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Invoice Date</span>
+                <span class="value">{{ date }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Order ID</span>
+                <span class="value" style="font-family: monospace;">{{ order_id }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            Digital signature hash verified.<br>
+            © 2026 Surefact Compliance. All Rights Reserved.
+        </div>
+        {% elif error %}
+        <div class="not-found">
+            <h2 style="margin-top:0">Validation Failed</h2>
+            <p>Could not find an official record matching ID: <b>{{ order_id }}</b></p>
+            <p style="font-size:0.8rem">Please contact support@surefact.ai if you believe this is a genuine receipt.</p>
+        </div>
+        {% else %}
+        <div class="landing-hero">
+            <div style="font-size: 3rem; margin-bottom: 20px;">📜</div>
+            <h1>Verification Hub</h1>
+            <p class="subtitle">Authenticate official Surefact receipts and certificates using their unique reference ID.</p>
+        </div>
+        {% endif %}
+
+        {% if not verified or error %}
+        <div class="search-section">
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Manual Verification</p>
+            <div class="search-box">
+                <input type="text" id="order-id-input" placeholder="Enter Reference ID (e.g., RA-XXXXXX)" value="{{ order_id if order_id != 'None' else '' }}">
+                <button class="btn-verify" onclick="manualVerify()">Verify</button>
+            </div>
+        </div>
+        {% endif %}
+
+        <script>
+            function manualVerify() {
+                const id = document.getElementById('order-id-input').value.trim();
+                if (id) window.location.href = '/verify/' + id;
+            }
+            // Enter key support
+            document.getElementById('order-id-input')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') manualVerify();
+            });
+        </script>
+    </div>
+</body>
+</html>

@@ -4,13 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Research Agent — AI-Powered Research</title>
+  <title>Surefact — AI-Powered Data Validation & Intelligence</title>
   <meta name="description"
     content="Automated AI research pipeline with real-time streaming and self-learning memory." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     rel="stylesheet" />
+  <link rel="stylesheet" href="/static/modern-ui.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
@@ -26,18 +27,18 @@
     }
 
     :root {
-      --bg: #030407;
-      --surface: #0a0c10;
-      --card: rgba(13, 17, 23, 0.7);
-      --border: rgba(255, 255, 255, 0.08);
-      --accent: #00ffa3;
-      --accent2: #00d1ff;
-      --accent3: #bd00ff;
-      --text: #f0f3f8;
-      --muted: #8b949e;
-      --danger: #ff4d6d;
-      --radius: 16px;
-      --glow: 0 0 40px rgba(0, 255, 163, 0.15);
+      --bg: var(--bg-dark, #000000);
+      --surface: var(--bg-surface, #0a0a0a);
+      --card: var(--bg-card, #111111);
+      --border: var(--border-color, rgba(255, 255, 255, 0.1));
+      --accent: var(--accent, #ffffff);
+      --accent2: var(--secondary, #a1a1aa);
+      --accent3: #52525b;
+      --text: var(--text-main, #f4f4f5);
+      --muted: var(--text-muted, #a1a1aa);
+      --danger: var(--vibrant-red, #ef4444);
+      --radius: var(--radius-lg, 16px);
+      --glow: none;
     }
 
     html {
@@ -59,29 +60,9 @@
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; border: 2px solid var(--bg); }
     ::-webkit-scrollbar-thumb:hover { background: rgba(0, 255, 163, 0.2); }
 
-    body::before {
-      content: '';
-      position: fixed;
-      top: -10%;
-      left: -10%;
-      width: 50vw;
-      height: 50vw;
-      background: radial-gradient(circle, rgba(0, 255, 163, 0.07) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: -1;
-    }
+    
 
-    body::after {
-      content: '';
-      position: fixed;
-      bottom: -10%;
-      right: -10%;
-      width: 50vw;
-      height: 50vw;
-      background: radial-gradient(circle, rgba(189, 0, 255, 0.05) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: -1;
-    }
+    
 
     @keyframes bgFloat {
       from {
@@ -106,31 +87,32 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 32px;
+      padding: 14px 24px;
       border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(20px);
-      background: rgba(8, 9, 14, 0.7);
+      backdrop-filter: var(--glass-blur, blur(12px) saturate(180%));
+      background: rgba(8, 9, 14, 0.4);
       position: sticky;
       top: 0;
       z-index: 100;
+      height: 64px;
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 1.1rem;
+      gap: 12px;
+      font-size: 1.05rem;
       font-weight: 600;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
+      color: #fff;
     }
 
     .logo-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px; /* Squared corners look more modern/pro */
       background: var(--accent);
-      box-shadow: 0 0 12px var(--accent);
-      animation: pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 15px var(--accent-glow, rgba(99, 102, 241, 0.3));
     }
 
     @keyframes pulse {
@@ -244,8 +226,7 @@
       border: 1px solid var(--border);
       border-radius: 20px;
       padding: 40px 36px;
-      backdrop-filter: blur(24px);
-      box-shadow: var(--glow), 0 30px 60px rgba(0, 0, 0, .4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
       animation: fadeUp .5s ease;
     }
 
@@ -373,46 +354,46 @@
     /* Sidebar */
     .sidebar {
       border-right: 1px solid var(--border);
-      padding: 32px 20px;
+      padding: 32px 16px;
       overflow-y: auto;
       background: rgba(13, 17, 23, 0.4);
-      backdrop-filter: blur(12px) saturate(180%);
+      backdrop-filter: var(--glass-blur, blur(12px) saturate(180%));
     }
 
     .sidebar-title {
-      font-size: .7rem;
+      font-size: .65rem;
       font-weight: 600;
-      letter-spacing: .1em;
+      letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 14px;
-      padding: 0 4px;
+      margin: 24px 0 12px 12px;
     }
 
     .history-item {
-      padding: 14px 16px;
-      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 14px;
+      border-radius: 10px;
       cursor: pointer;
       border: 1px solid transparent;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      margin-bottom: 8px;
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
       position: relative;
-      background: rgba(255, 255, 255, 0.02);
+      background: transparent;
     }
 
     .history-item:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: var(--border);
-      transform: translateX(4px);
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.05);
     }
 
     .history-item.active {
-      background: rgba(0, 255, 163, 0.06);
-      border-color: rgba(0, 255, 163, 0.2);
+      background: rgba(99, 102, 241, 0.08); /* Indigo active */
+      border-color: rgba(99, 102, 241, 0.15);
     }
 
     .history-query {
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
@@ -425,9 +406,9 @@
     }
 
     .history-meta {
-      font-size: .72rem;
-      color: var(--muted);
-      margin-top: 4px;
+      font-size: .7rem;
+      color: var(--text-dim, #64748b);
+      margin-top: 2px;
     }
 
     .history-delete {
@@ -438,34 +419,48 @@
       opacity: 0;
       background: none;
       border: none;
-      color: var(--danger);
+      color: var(--text-dim);
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.9rem;
       padding: 4px;
-      transition: opacity .2s;
+      transition: all .2s;
     }
 
     .history-item:hover .history-delete {
       opacity: 1;
     }
 
+    .history-delete:hover {
+      color: var(--danger);
+    }
+
     .history-empty {
-      font-size: .83rem;
+      font-size: .8rem;
       color: var(--muted);
       text-align: center;
       padding: 30px 10px;
     }
 
     .plan-card {
-      background: rgba(79, 255, 176, .04);
-      border: 1px solid rgba(79, 255, 176, .1);
+      background: rgba(99, 102, 241, 0.04);
+      border: 1px solid rgba(99, 102, 241, 0.08);
       border-radius: 12px;
-      padding: 14px;
+      padding: 16px;
       margin-top: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plan-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 40px; height: 40px;
+      background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent);
     }
 
     .plan-name {
-      font-size: .75rem;
+      font-size: .65rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: .08em;
@@ -473,9 +468,10 @@
     }
 
     .plan-credits-big {
-      font-size: 1.4rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      margin-top: 6px;
+      margin-top: 4px;
+      color: #fff;
     }
 
     .plan-label-sm {
@@ -491,75 +487,90 @@
     }
 
     .search-panel {
-      padding: 32px 40px 24px;
+      padding: 40px 48px 32px;
       border-bottom: 1px solid var(--border);
+      background: linear-gradient(to bottom, rgba(10, 12, 18, 0.4), transparent);
     }
 
     .search-hero {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -.03em;
-      margin-bottom: 20px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -.02em;
+      margin-bottom: 24px;
+      color: #fff;
     }
 
     .search-hero span {
-      color: var(--accent);
+       opacity: 0.8;
+       font-weight: 400;
+       color: var(--text-muted);
     }
 
     .search-row {
       display: flex;
-      gap: 12px;
-      align-items: flex-end;
+      gap: 16px;
+      align-items: stretch;
+      max-width: 900px;
     }
 
     .search-input-wrap {
       flex: 1;
+      position: relative;
     }
 
     .search-input {
       width: 100%;
-      padding: 14px 20px;
-      background: rgba(255, 255, 255, .04);
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border);
       border-radius: 12px;
       color: var(--text);
       font-family: inherit;
-      font-size: .95rem;
+      font-size: 1rem;
       outline: none;
-      transition: all .25s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .search-input:focus {
-      border-color: rgba(79, 255, 176, .4);
-      background: rgba(79, 255, 176, .02);
-      box-shadow: 0 0 0 3px rgba(79, 255, 176, .08);
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.02);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), inset 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .search-input::placeholder {
-      color: var(--muted);
+      color: var(--text-dim);
     }
 
     .format-select {
-      padding: 14px 16px;
+      padding: 0 18px;
       border-radius: 12px;
-      background: rgba(255, 255, 255, .04);
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border);
-      color: var(--text);
+      color: var(--text-muted);
       font-family: inherit;
-      font-size: .875rem;
+      font-size: 0.85rem;
       outline: none;
       cursor: pointer;
-      min-width: 160px;
+      min-width: 180px;
+      transition: all 0.2s;
+    }
+
+    .format-select:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
     }
 
     .format-select option {
-      background: #1a1d2e;
+      background: var(--bg-surface);
+      color: #fff;
     }
 
     /* Pipeline */
     .pipeline-panel {
-      padding: 20px 40px;
+      padding: 24px 48px;
       border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.01);
     }
 
     .pipeline-stages {
@@ -1369,6 +1380,66 @@
       margin-top: 4px;
     }
 
+    /* Account Section */
+    .account-btn {
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      margin-right: 8px;
+    }
+
+    .account-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border);
+    }
+
+    .account-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent-glow, rgba(99, 102, 241, 0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    /* Form Styles for Profile */
+    .profile-form-group {
+      margin-bottom: 20px;
+    }
+
+    .profile-form-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .profile-form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+
+    .profile-form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.05);
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar {
       width: 4px;
@@ -1426,11 +1497,27 @@
     <!-- Nav -->
     <nav id="navbar" style="display:none">
       <div class="logo">
-        <div class="logo-dot"></div>Research Agent
+        <img src="/static/surefact_logo.png" style="height: 24px; border-radius: 4px;" alt="Surefact" /> Surefact
       </div>
       <div class="nav-right">
         <div class="credit-badge">⚡ <span id="credit-count">—</span> credits</div>
-        <span class="user-info" id="nav-email"></span>
+        <div class="notif-wrapper" style="position:relative; cursor:pointer;" onclick="toggleNotifs()">
+          <span id="notif-bell" style="font-size:1.2rem;">🔔</span>
+          <span id="notif-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#ff4d6d; color:white; border-radius:50%; width:16px; height:16px; font-size:10px; display:flex; align-items:center; justify-content:center; border:2px solid var(--background);">0</span>
+          <div id="notif-dropdown" style="display:none; position:absolute; top:35px; right:0; width:300px; background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:1rem; z-index:2000; box-shadow:0 10px 40px rgba(0,0,0,0.6); backdrop-filter:blur(10px);">
+              <h4 style="margin:0 0 12px; font-size:0.9rem; letter-spacing:0.05em; color:var(--muted); text-transform:uppercase;">Notifications</h4>
+              <div id="notif-list" style="max-height:300px; overflow-y:auto; font-size:0.85rem;">
+                  <p style="color:var(--muted); text-align:center; margin-top:10px;">No new updates.</p>
+              </div>
+          </div>
+        </div>
+        <div class="account-btn" onclick="openProfileModal()">
+          <span id="nav-username" style="font-size: 0.9rem; font-weight: 500; color: var(--text-main); margin-right: 8px;"></span>
+          <div class="account-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
+        </div>
+        <button class="btn btn-ghost" style="padding:7px 16px" onclick="openSupportModal()">Help / Support</button>
         <button class="btn btn-ghost" style="padding:7px 16px" onclick="logout()">Sign out</button>
       </div>
     </nav>
@@ -1439,34 +1526,69 @@
     <div id="auth-screen">
       <div class="auth-card">
         <div class="logo" style="margin-bottom:20px">
-          <div class="logo-dot"></div>Research Agent
+          <img src="/static/surefact_logo.png" style="height: 24px; border-radius: 4px;" alt="Surefact" /> Surefact
         </div>
         <h1 class="auth-title">Welcome back</h1>
         <p class="auth-sub">AI-powered research, verified and cited.</p>
-        <div class="auth-tabs">
-          <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign in</button>
-          <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button>
+
+        <!-- Login / Signup Tabs -->
+        <div id="auth-tab-container">
+          <div class="auth-tabs">
+            <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign in</button>
+            <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button>
+          </div>
+
+          <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="login-email"
+                type="email" placeholder="you@example.com" required autocomplete="email" /></div>
+            <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="login-pass"
+                type="password" placeholder="••••••••" required autocomplete="current-password" /></div>
+            <p class="form-error" id="login-error"></p>
+            <button class="btn btn-primary btn-full" id="login-btn" type="submit"><span id="login-btn-text">Sign in</span></button>
+          </form>
+
+          <form id="signup-form" style="display:none" onsubmit="handleSignup(event)">
+            <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="signup-email"
+                type="email" placeholder="you@example.com" required autocomplete="email" /></div>
+            <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="signup-pass"
+                type="password" placeholder="Min. 6 characters" required autocomplete="new-password" /></div>
+            <p class="form-error" id="signup-error"></p>
+            <button class="btn btn-primary btn-full" id="signup-btn" type="submit"><span id="signup-btn-text">Create account</span></button>
+          </form>
         </div>
-        <form id="login-form" onsubmit="handleLogin(event)">
-          <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="login-email"
-              type="email" placeholder="you@example.com" required autocomplete="email" /></div>
-          <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="login-pass"
-              type="password" placeholder="••••••••" required autocomplete="current-password" /></div>
-          <p class="form-error" id="login-error"></p>
-          <button class="btn btn-primary btn-full" id="login-btn" type="submit"><span id="login-btn-text">Sign
-              in</span></button>
-        </form>
-        <form id="signup-form" style="display:none" onsubmit="handleSignup(event)">
-          <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="signup-email"
-              type="email" placeholder="you@example.com" required autocomplete="email" /></div>
-          <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="signup-pass"
-              type="password" placeholder="Min. 6 characters" required autocomplete="new-password" /></div>
-          <p class="form-error" id="signup-error"></p>
-          <button class="btn btn-primary btn-full" id="signup-btn" type="submit"><span id="signup-btn-text">Create
-              account</span></button>
-        </form>
+
+        <!-- OTP Verification Step (shown after signup or when email OTP is required) -->
+        <div id="otp-container" style="display:none">
+          <div style="text-align:center;margin-bottom:18px">
+            <div style="font-size:2.5rem;margin-bottom:8px">📬</div>
+            <h2 style="font-size:1.1rem;font-weight:600;color:var(--text);margin:0 0 6px">Check your email</h2>
+            <p style="color:var(--muted);font-size:.85rem;margin:0">We sent a 6-digit OTP to <strong id="otp-email-display"></strong></p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Enter 6-Digit OTP</label>
+            <input class="form-input" id="otp-input" type="text" inputmode="numeric" pattern="[0-9]{6}"
+              placeholder="e.g. 482910" maxlength="6" style="font-size:1.4rem;letter-spacing:8px;text-align:center"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+          </div>
+          <p class="form-error" id="otp-error"></p>
+          <button class="btn btn-primary btn-full" id="otp-btn" onclick="handleVerifyOTP()">
+            <span id="otp-btn-text">✅ Verify & Continue</span>
+          </button>
+          <button class="btn btn-ghost btn-full" style="margin-top:10px;justify-content:center;font-size:.82rem"
+            onclick="resendOTP()">Resend OTP</button>
+          <button class="btn btn-ghost btn-full" style="margin-top:4px;justify-content:center;font-size:.82rem;opacity:.6"
+            onclick="showAuthTabs()">← Back to login</button>
+        </div>
+
+        <!-- Admin Login Button -->
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+          <a href="/admin" class="btn btn-ghost btn-full" style="justify-content: center; font-size: 0.85rem; color: var(--accent3); border-color: rgba(189, 0, 255, 0.3);">
+            👨‍💼 Admin Login
+          </a>
+        </div>
       </div>
     </div>
+
 
     <!-- Main App -->
     <div id="main-screen">
@@ -1479,6 +1601,8 @@
             <div class="plan-label-sm">credits remaining</div>
             <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px;font-size:.82rem"
               onclick="openPaymentModal(false)">⬆ Upgrade Plan</button>
+            <button class="btn btn-ghost" id="btn-billing" style="width:100%;justify-content:center;margin-top:8px;font-size:0.75rem;display:none;border-color:rgba(189, 0, 255, 0.2);"
+              onclick="showBilling()">💳 Manage Subscription</button>
           </div>
           <div style="margin-top:24px;margin-bottom:14px">
             <div class="sidebar-title">Recent Research</div>
@@ -1488,29 +1612,99 @@
           </div>
         </aside>
 
-        <!-- Content -->
         <main class="content">
-          <!-- Search -->
+          <!-- Search Area -->
           <div class="search-panel">
-            <h2 class="search-hero">What are you <span>researching</span> today?</h2>
-            <div class="search-row">
-              <div class="search-input-wrap">
-                <input class="search-input" id="query-input"
-                  placeholder="e.g. Latest breakthroughs in quantum computing 2024..."
-                  onkeydown="if(event.key==='Enter')startResearch()" />
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+              <h2 class="search-hero" style="margin-bottom: 0;">What are you <span>researching</span> today?</h2>
+              <!-- Secondary prominent credit display for desktop/mobile consistency -->
+              <div class="credit-badge" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2); padding: 8px 16px; border-radius: 12px;">
+                <span id="credit-count-alt" style="font-weight: 700; color: var(--accent);">—</span>
+                <span style="font-size: 0.75rem; text-transform: uppercase; margin-left: 4px; opacity: 0.8;">Credits</span>
               </div>
-              <select class="format-select" id="format-select">
+            </div>
+            <div class="search-row">
+               <div class="search-input-wrap">
+                 <input class="search-input" id="query-input"
+                   placeholder="e.g. Latest breakthroughs in quantum computing 2024..."
+                   onkeydown="if(event.key==='Enter')startResearch()" />
+               </div>
+               <select class="format-select" id="format-select">
                 <option value="detailed report">Detailed Report</option>
                 <option value="bullet point summary">Bullet Points</option>
                 <option value="executive summary">Executive Summary</option>
                 <option value="research paper">Research Paper</option>
                 <option value="timeline">Timeline</option>
                 <option value="comparison table">Comparison Table</option>
-              </select>
-              <button class="btn btn-primary" id="research-btn" onclick="startResearch()">
-                <span id="btn-text">Research</span>
-                <div class="spinner" id="btn-spinner" style="display:none"></div>
-              </button>
+               </select>
+               <button class="btn btn-primary" id="research-btn" onclick="startResearch()">
+                 <span id="btn-text">Research</span>
+                 <div class="spinner" id="btn-spinner" style="display:none"></div>
+               </button>
+            </div>
+          </div>
+
+          <!-- Billing & Plan View -->
+          <div id="billing-center" style="display:none; padding:1.5rem 0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+              <h2 style="font-size:1.6rem; font-weight:700; background:linear-gradient(90deg, #fff, #bd00ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Subscription & Billing</h2>
+              <button class="btn btn-ghost" onclick="hideBilling()">← Back to Research</button>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;">
+              <!-- Current Plan Card -->
+              <div class="glass-panel" style="padding:20px;">
+                <h4 style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; margin-bottom:12px; letter-spacing:1px;">Active Plan</h4>
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                  <div id="billing-plan-badge" style="background:var(--accent); color:black; padding:4px 12px; border-radius:30px; font-weight:700; font-size:1rem;">--</div>
+                  <span style="color:var(--muted); font-size:0.85rem;">Valid for <span id="billing-days-left">--</span> more days</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-top:1px solid var(--border); padding-top:12px; font-size:0.9rem;">
+                  <span style="color:var(--muted);">Total Credits</span>
+                  <span id="billing-total-credits" style="font-weight:600;">--</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem;">
+                  <span style="color:var(--muted);">Available Credits</span>
+                  <span id="billing-avail-credits" style="font-weight:600;">--</span>
+                </div>
+              </div>
+
+              <!-- Refund Math Card -->
+              <div class="glass-panel" style="padding:20px; border-color:rgba(255, 77, 109, 0.3);">
+                <h4 style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; margin-bottom:8px; letter-spacing:1px;">Prorated Refund Value</h4>
+                <div style="font-size:2rem; font-weight:800; color:var(--danger); margin-bottom:4px;" id="billing-refund-total">₹0.00</div>
+                <p style="font-size:0.75rem; color:var(--muted); line-height:1.4;">Fair calculation based on your credit consumption and usage time.</p>
+                <div id="refund-breakdown" style="margin-top:12px; font-size:0.8rem; border-top:1px solid var(--border); padding-top:12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span style="color:var(--muted)">Price per Credit</span>
+                        <span id="math-cost-per">₹--</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; color:var(--danger)">
+                        <span style="color:var(--muted)">Usage Charge</span>
+                        <span id="math-deduction">-₹--</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" style="width:100%; justify-content:center; background:var(--danger); border-radius:8px; margin-top:12px; font-size:0.85rem;" onclick="openRefundModal()">Request Refund</button>
+              </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="glass-panel" style="padding:20px; overflow-x: auto;">
+                <h4 style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; margin-bottom:12px; letter-spacing:1px;">Transaction History</h4>
+                <table style="width:100%; text-align:left; border-collapse:collapse; min-width: 500px;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border); color:var(--muted); font-size:0.75rem;">
+                            <th style="padding:8px;">DATE</th>
+                            <th style="padding:8px;">PLAN</th>
+                            <th style="padding:8px;">AMOUNT</th>
+                            <th style="padding:8px;">REF CODE</th>
+                            <th style="padding:8px;">STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billing-history-body" style="font-size:0.85rem;">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
             </div>
           </div>
 
@@ -1649,16 +1843,174 @@
     </div>
   </div>
 
-  <!-- Toast -->
-  <div class="toast" id="toast">
-    <span id="toast-icon">✓</span>
-    <span id="toast-text">Done!</span>
+  <!-- Refund Modal (Survey + Bank Details) -->
+  <div class="modal-overlay" id="refund-modal">
+    <div class="modal" id="refund-modal-content" style="max-width: 500px;">
+      <button class="modal-close" onclick="closeRefundModal()">✕</button>
+      
+      <!-- Step 1: Survey -->
+      <div id="refund-step-survey">
+        <div class="modal-title">Cancellation Survey</div>
+        <p class="modal-sub">Tell us why you're leaving to help us improve.</p>
+        
+        <div class="form-group">
+            <label class="form-label">1. Which region are you located in?</label>
+            <select id="survey-region" class="utr-input">
+                <option value="Asia">Asia</option>
+                <option value="India">India</option>
+                <option value="USA">USA / Canada</option>
+                <option value="Europe">Europe</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">2. Primary reason for cancelling?</label>
+            <select id="survey-reason" class="utr-input">
+                <option value="Too Expensive">Price is too high</option>
+                <option value="Project Done">My current project is finished</option>
+                <option value="Better Tool">Found a better alternative</option>
+                <option value="Technical">Technical issues/Bugs</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">3. Rating of Research Accuracy (1-5)?</label>
+            <input type="range" id="survey-rating" min="1" max="5" value="4" class="utr-input" style="padding:0">
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--muted); margin-top:4px;">
+                <span>Poor</span><span>Excellent</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">4. What feature could have made you stay?</label>
+            <input type="text" id="survey-feature" class="utr-input" placeholder="e.g. Better mobile app, more sources...">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">5. Would you return in the future?</label>
+            <div style="display:flex; gap:20px; margin-top:5px;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem;"><input type="radio" name="survey-return" value="Yes" checked> Yes</label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem;"><input type="radio" name="survey-return" value="No"> No</label>
+            </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="nextRefundStep()" style="margin-top:20px;">Continue to Bank Details</button>
+      </div>
+
+      <!-- Step 2: Bank Details -->
+      <div id="refund-step-bank" style="display:none">
+        <div class="modal-title" style="color:var(--danger)">Refund Details</div>
+        <p class="modal-sub">Enter where you'd like to receive your refund.</p>
+        
+        <div class="form-group">
+          <label class="form-label">Bank or UPI Information</label>
+          <textarea id="refund-bank-details" class="utr-input" rows="4" 
+            placeholder="Account Name: ...&#10;Account No: ...&#10;IFSC: ...&#10;OR UPI ID: ..."></textarea>
+        </div>
+        
+        <div class="upgrade-banner" style="margin-bottom:20px; border-color:rgba(255,77,109,.2)">
+          <div class="banner-title" style="color:var(--danger)">⚠️ Final Confirmation</div>
+          <p class="banner-sub">Submitting this will immediately end your premium access and revert your account to the Free plan.</p>
+        </div>
+        
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-ghost" onclick="prevRefundStep()" style="flex:1; justify-content:center;">Back</button>
+            <button class="btn btn-primary" id="btn-submit-refund" onclick="submitRefund()" style="flex:2; justify-content:center; background:var(--danger)">Submit & Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Support Modal -->
+  <div class="modal-overlay" id="support-modal">
+    <div class="modal" style="max-width: 500px;">
+        <button class="modal-close" onclick="closeSupportModal()">✕</button>
+        <div class="modal-title">Support Center</div>
+        <p class="modal-sub">Need a refund, upgrade help, or have content issues? Let us know.</p>
+        <form id="support-form" onsubmit="submitSupport(event)">
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select id="support-category" class="utr-input" required>
+                    <option value="upgrade">Upgrade / Plan Issue</option>
+                    <option value="refund">Refund Request</option>
+                    <option value="content">Generated Content Issue</option>
+                    <option value="other">Other / Technical Support</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Subject</label>
+                <input type="text" class="utr-input" id="support-subject" placeholder="Brief summary" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="support-description" class="utr-input" rows="4" placeholder="Describe your issue in detail..." required style="resize:vertical;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="support-btn">Submit Request</button>
+        </form>
+        <p id="support-status" style="margin-top:1rem; text-align:center; display:none; font-size:0.85rem;"></p>
+    </div>
+  </div>
+  <!-- Profile Modal -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal" style="max-width: 480px; box-shadow: 0 10px 50px rgba(0,0,0,0.8); border: 1px solid var(--border);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h2 id="profile-modal-title" style="margin:0; font-size:1.4rem;">Student Profile</h2>
+        <button class="btn btn-ghost" onclick="closeProfileModal()" id="profile-close-btn" style="padding:4px; min-width:unset;">✕</button>
+      </div>
+      
+      <div id="profile-setup-notice" style="display:none; background:rgba(99, 102, 241, 0.1); border:1px solid var(--accent); padding:16px; border-radius:12px; margin-bottom:20px; font-size:0.85rem; color:var(--accent); line-height:1.5;">
+        👋 **Welcome to Surefact!** <br>To ensure a professional experience, please complete your profile. **Username is mandatory.**
+      </div>
+
+      <div class="profile-form-group">
+        <label>Full Name</label>
+        <input type="text" id="prof-name" placeholder="E.g. Ayush Kumar">
+      </div>
+      
+      <div class="profile-form-group" id="username-form-group">
+        <label>Username (Mandatory)</label>
+        <input type="text" id="prof-username" placeholder="Choose a unique username">
+      </div>
+
+      <div class="profile-form-group">
+        <label>Phone Number</label>
+        <input type="text" id="prof-phone" placeholder="+91 XXXXX XXXXX">
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div class="profile-form-group">
+          <label>School / College</label>
+          <input type="text" id="prof-school" placeholder="Institute Name">
+        </div>
+        <div class="profile-form-group">
+          <label>Enrollment Number</label>
+          <input type="text" id="prof-enrollment" placeholder="ID / Roll No.">
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:none;" id="profile-error" class="utr-error"></div>
+
+      <div class="modal-actions" style="margin-top:24px;">
+        <button class="btn btn-primary" style="flex:1; justify-content:center; height:48px;" onclick="saveProfile()" id="save-profile-btn">
+          <span>Save Profile</span>
+          <div class="spinner" id="save-profile-spinner" style="display:none"></div>
+        </button>
+      </div>
+    </div>
   </div>
 
   <script>
     const API = window.location.origin;
     let authToken = null, currentUser = null, activeWs = null, isResearching = false;
     let selectedPlan = null, selectedAmount = 0;
+
+    const PLAN_CONFIG = {
+      "free": { credits: 1 },
+      "student": { credits: 25 },
+      "researcher": { credits: 100 }
+    };
 
     // Boot
     window.onload = () => {
@@ -1695,14 +2047,216 @@
       errEl.classList.remove('show'); btn.disabled = true;
       document.getElementById('signup-btn-text').textContent = 'Creating…';
       try {
-        const res = await fetch(`${API}/auth/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('signup-email').value, password: document.getElementById('signup-pass').value }) });
+        const email = document.getElementById('signup-email').value;
+        const res = await fetch(`${API}/auth/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: document.getElementById('signup-pass').value }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Signup failed.');
+        
+        // If OTP verification required
+        if (data.requires_otp) {
+          showOTPStep(email);
+          showToast('OTP sent to your email! Check your inbox.', 'success');
+          return;
+        }
+        
+        // Direct login (email confirmation off in Supabase)
         authToken = data.access_token; currentUser = { id: data.user_id, email: data.email };
         localStorage.setItem('ra_token', authToken); localStorage.setItem('ra_user', JSON.stringify(currentUser));
         showApp(); showToast('Account created! You have 3 free research credits.', 'success');
       } catch (err) { errEl.textContent = err.message; errEl.classList.add('show'); }
       finally { btn.disabled = false; document.getElementById('signup-btn-text').textContent = 'Create account'; }
+    }
+
+    // ── OTP Flow ───────────────────────────────────────────────────────────────
+    let _otpEmail = '';
+
+    function showOTPStep(email) {
+      _otpEmail = email;
+      document.getElementById('otp-email-display').textContent = email;
+      document.getElementById('auth-tab-container').style.display = 'none';
+      document.getElementById('otp-container').style.display = 'block';
+      document.getElementById('otp-input').focus();
+    }
+
+    function showAuthTabs() {
+      document.getElementById('otp-container').style.display = 'none';
+      document.getElementById('auth-tab-container').style.display = 'block';
+    }
+
+    async function handleVerifyOTP() {
+      const btn = document.getElementById('otp-btn');
+      const errEl = document.getElementById('otp-error');
+      const otp = document.getElementById('otp-input').value.trim();
+      if (otp.length !== 6) { errEl.textContent = 'Please enter the full 6-digit OTP.'; errEl.classList.add('show'); return; }
+      errEl.classList.remove('show'); btn.disabled = true;
+      document.getElementById('otp-btn-text').textContent = 'Verifying…';
+      try {
+        const res = await fetch(`${API}/auth/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: _otpEmail, token: otp }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Invalid OTP.');
+
+        // If we got an access_token, log them in directly
+        if (data.access_token) {
+          authToken = data.access_token; currentUser = { id: data.user_id, email: data.email };
+          localStorage.setItem('ra_token', authToken); localStorage.setItem('ra_user', JSON.stringify(currentUser));
+          showApp(); showToast('✅ Email verified! Welcome aboard.', 'success');
+          return;
+        }
+
+        // Otherwise: verified — redirect to login tab with pre-filled email
+        showAuthTabs();
+        switchTab('login');
+        document.getElementById('login-email').value = _otpEmail;
+        document.getElementById('login-pass').focus();
+        showToast('✅ Email verified! Now sign in with your password.', 'success');
+      } catch (err) { errEl.textContent = err.message; errEl.classList.add('show'); }
+      finally { btn.disabled = false; document.getElementById('otp-btn-text').textContent = '✅ Verify & Continue'; }
+    }
+
+    async function resendOTP() {
+      if (!_otpEmail) return;
+      try {
+        await fetch(`${API}/auth/send-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: _otpEmail }) });
+        showToast('New OTP sent to your email!', 'success');
+      } catch { showToast('Failed to resend OTP. Try again.', 'error'); }
+    }
+
+    function showApp() {
+      const authScreen = document.getElementById('auth-screen');
+      const mainScreen = document.getElementById('main-screen');
+      const navbar = document.getElementById('navbar');
+
+      if (authScreen) authScreen.style.display = 'none';
+      if (mainScreen) mainScreen.classList.add('active');
+      if (navbar) navbar.style.display = 'flex';
+      
+      // Update Nav Username
+      if (currentUser && currentUser.username) {
+          const navUser = document.getElementById('nav-username');
+          if (navUser) navUser.textContent = `@${currentUser.username}`;
+      }
+
+      // Mandatory Profile Check
+      checkMandatoryProfile();
+      
+      if (typeof loadHistory === 'function') loadHistory();
+      if (typeof refreshUserInfo === 'function') refreshUserInfo();
+      if (typeof pollNotifications === 'function') pollNotifications();
+      
+      // Auto-refresh notifications every 30 seconds
+      if (typeof pollNotifications === 'function') {
+          setInterval(pollNotifications, 30000);
+      }
+    }
+
+    async function checkMandatoryProfile() {
+        try {
+            const resp = await fetch(`${API}/auth/me?token=${authToken}`);
+            const data = await resp.json();
+            if (data.user_id) {
+                // Update local currentUser with full profile safely
+                currentUser = currentUser ? { ...currentUser, ...data } : data;
+                localStorage.setItem('ra_user', JSON.stringify(currentUser));
+                
+                const navUser = document.getElementById('nav-username');
+                if (currentUser.username && navUser) {
+                    navUser.textContent = `@${currentUser.username}`;
+                }
+
+                if (!data.username) {
+                    openProfileModal(true); // Is Mandatory
+                }
+            }
+        } catch (e) { console.error("Profile check failed", e); }
+    }
+
+    function openProfileModal(isMandatory = false) {
+        const modal = document.getElementById('profile-modal');
+        const closeBtn = document.getElementById('profile-close-btn');
+        const notice = document.getElementById('profile-setup-notice');
+        const title = document.getElementById('profile-modal-title');
+        
+        if (isMandatory) {
+            closeBtn.style.display = 'none';
+            notice.style.display = 'block';
+            title.textContent = 'Complete Your Profile';
+            // Prevent closing by clicking overlay
+            modal.onclick = (e) => { if(e.target === modal) e.stopPropagation(); };
+        } else {
+            closeBtn.style.display = 'block';
+            notice.style.display = 'none';
+            title.textContent = 'Student Profile';
+            modal.onclick = (e) => { if(e.target === modal) closeProfileModal(); };
+        }
+
+        // Fill current data
+        if (currentUser) {
+            document.getElementById('prof-name').value = currentUser.full_name || '';
+            document.getElementById('prof-username').value = currentUser.username || '';
+            document.getElementById('prof-phone').value = currentUser.phone || '';
+            document.getElementById('prof-school').value = currentUser.school_college || '';
+            document.getElementById('prof-enrollment').value = currentUser.enrollment_number || '';
+        }
+
+        modal.classList.add('open');
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profile-modal').classList.remove('open');
+    }
+
+    async function saveProfile() {
+        const btn = document.getElementById('save-profile-btn');
+        const spinner = document.getElementById('save-profile-spinner');
+        const errDiv = document.getElementById('profile-error');
+        
+        const payload = {
+            full_name: document.getElementById('prof-name').value.trim(),
+            username: document.getElementById('prof-username').value.trim(),
+            phone: document.getElementById('prof-phone').value.trim(),
+            school_college: document.getElementById('prof-school').value.trim(),
+            enrollment_number: document.getElementById('prof-enrollment').value.trim()
+        };
+
+        if (!payload.username) {
+            errDiv.textContent = "Username is mandatory.";
+            errDiv.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        errDiv.style.display = 'none';
+
+        try {
+            const resp = await fetch(`${API}/auth/update-profile?token=${authToken}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const res = await resp.json();
+            
+            if (res.success) {
+                // Update local storage safely
+                currentUser = currentUser ? { ...currentUser, ...payload } : payload;
+                localStorage.setItem('ra_user', JSON.stringify(currentUser));
+                
+                const navUser = document.getElementById('nav-username');
+                if (navUser) navUser.textContent = `@${payload.username}`;
+                
+                showToast("Profile Updated!", "✓");
+                closeProfileModal();
+            } else {
+                errDiv.textContent = res.detail || "Update failed.";
+                errDiv.style.display = 'block';
+            }
+        } catch (e) {
+            errDiv.textContent = "Connection error.";
+            errDiv.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            spinner.style.display = 'none';
+        }
     }
 
     function logout() {
@@ -1714,24 +2268,79 @@
       document.getElementById('navbar').style.display = 'none';
     }
 
-    async function showApp() {
-      document.getElementById('auth-screen').style.display = 'none';
-      document.getElementById('main-screen').classList.add('active');
-      document.getElementById('navbar').style.display = 'flex';
-      document.getElementById('nav-email').textContent = currentUser.email;
-      await refreshUserInfo(); await loadHistory();
-    }
-
     async function refreshUserInfo() {
       try {
         const res = await fetch(`${API}/auth/me?token=${authToken}`);
         if (!res.ok) return;
         const data = await res.json();
         const plan = data.plan || 'free', creds = data.credits_remaining ?? 0;
-        document.getElementById('credit-count').textContent = creds;
+        const mainCount = document.getElementById('credit-count');
+        const altCount = document.getElementById('credit-count-alt');
+        const sidebarCount = document.getElementById('plan-credits');
+        
+        if (mainCount) mainCount.textContent = creds;
+        if (altCount) altCount.textContent = creds;
+        if (sidebarCount) sidebarCount.textContent = creds;
+
         document.getElementById('plan-name').textContent = plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan';
-        document.getElementById('plan-credits').textContent = creds;
+        
+        // Show/Hide Billing button
+        const billingBtn = document.getElementById('btn-billing');
+        if (billingBtn) {
+          billingBtn.style.display = (plan !== 'free') ? 'flex' : 'none';
+        }
       } catch { }
+    }
+
+    // --- Billing Center ---
+    function showBilling() { 
+        showAccountView(); 
+    }
+    
+    function hideBilling() { 
+        hideAccountView(); 
+    }
+
+    async function loadBillingData() {
+        try {
+            // 1. Fetch Refund Calculation (Stats)
+            const res = await fetch(`${API}/payment/refund-status`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                document.getElementById('billing-plan-badge').textContent = data.plan.toUpperCase();
+                document.getElementById('billing-days-left').textContent = data.days_remaining;
+                document.getElementById('billing-total-credits').textContent = PLAN_CONFIG[data.plan].credits;
+                document.getElementById('billing-avail-credits').textContent = data.credits_remaining;
+                document.getElementById('billing-refund-total').textContent = `₹${data.estimated_refund.toFixed(2)}`;
+                document.getElementById('math-cost-per').textContent = `₹${data.price_per_credit}`;
+                document.getElementById('math-deduction').textContent = `-₹${data.usage_deduction}`;
+            }
+
+            // 2. Fetch History
+            const histRes = await fetch(`${API}/payment/history`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const histData = await histRes.json();
+            const tbody = document.getElementById('billing-history-body');
+            
+            if (histData.history && histData.history.length > 0) {
+                tbody.innerHTML = histData.history.map(h => `
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <td style="padding:12px 8px; color:var(--muted);">${new Date(h.created_at).toLocaleDateString()}</td>
+                        <td style="padding:12px 8px; font-weight:600;">${h.plan.toUpperCase()}</td>
+                        <td style="padding:12px 8px;">₹${h.amount}</td>
+                        <td style="padding:12px 8px; font-family:monospace; font-size:0.75rem;">${h.order_id}</td>
+                        <td style="padding:12px 8px;"><span style="color:var(--accent); font-size:0.7rem; background:rgba(79, 255, 176, 0.1); padding:2px 6px; border-radius:4px;">${h.status.toUpperCase()}</span></td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--muted);">No transactions found.</td></tr>';
+            }
+        } catch (err) {
+            console.error("Billing load failed", err);
+        }
     }
 
     async function loadHistory() {
@@ -1952,7 +2561,7 @@
         // Aggressive clean: remove [Sources], **Bold**, (Parens in labels), and [Brackets in labels]
         const clean = code
           .replace(/\[Source \d+\]/gi, '')
-          .replace(/\*\*/g, '')
+          .replace(/\*\*\//g, '')
           .replace(/\[/g, '(') // Mermaid doesn't like [ ] inside nodes if not special
           .replace(/\]/g, ')')
           .trim();
@@ -1965,8 +2574,8 @@
       const esc2 = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
       // ── Tables ──────────────────────────────────────────────────────────────
-      // Match markdown table blocks: optional pipes, mandatory separator line (---|---)
-      t = t.replace(/(?:^|\n)((?:\|?.+\|?)+)\n((?:\|? ?[-: ]+[-| :]*\|? ?)+)\n((?:(?:\|?.+\|?)+\n?)+)/gm, (match, header, sep, body) => {
+      // Match markdown table blocks (requires at least one | per row to avoid catastrophic backtracking)
+      t = t.replace(/(?:^|\n)([^\n]+\|[^\n]*)\n([-:\s\|]+)\n((?:[^\n]+\|[^\n]*(?:\n|$))+)/g, (match, header, sep, body) => {
         const parseRow = (row) => {
           let r = row.trim();
           if (r.startsWith('|')) r = r.slice(1);
@@ -2184,6 +2793,181 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { toast.className = `toast ${type}`; }, 3500);
     }
+
+    // --- Support & Notifications ---
+    function openSupportModal() { document.getElementById('support-modal').classList.add('open'); }
+    function closeSupportModal() { document.getElementById('support-modal').classList.remove('open'); }
+
+    async function submitSupport(e) {
+        e.preventDefault();
+        const btn = document.getElementById('support-btn');
+        const status = document.getElementById('support-status');
+        const originalText = btn.innerText;
+
+        btn.innerText = "Submitting...";
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API}/support/tickets`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                body: JSON.stringify({
+                    category: document.getElementById('support-category').value,
+                    subject: document.getElementById('support-subject').value,
+                    description: document.getElementById('support-description').value
+                })
+            });
+            
+            if (res.ok) {
+                status.innerText = "✅ Successfully submitted! Our team will get back to you.";
+                status.style.color = "var(--accent)";
+                e.target.reset();
+                setTimeout(() => { closeSupportModal(); status.style.display = 'none'; }, 2000);
+            } else {
+                throw new Error("Failed");
+            }
+        } catch (err) {
+            status.innerText = "❌ Error submitting. Please try again.";
+            status.style.color = "#ff4d4d";
+        } finally {
+            status.style.display = 'block';
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function loadNotifications() {
+        if(!authToken) return;
+        try {
+            const res = await fetch(`${API}/support/notifications`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            const data = await res.json();
+            const list = document.getElementById('notif-list');
+            const badge = document.getElementById('notif-badge');
+            
+            const unread = data.notifications.filter(n => !n.is_read);
+            if (unread.length > 0) {
+                badge.innerText = unread.length;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            if (data.notifications.length === 0) {
+                list.innerHTML = '<p style="color:var(--muted); text-align:center; margin-top:10px;">No new updates.</p>';
+                return;
+            }
+
+            list.innerHTML = data.notifications.map(n => `
+                <div class="notif-item" style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); border-radius:8px; margin-bottom:4px; transition:all 0.2s; cursor:pointer; ${n.is_read ? '' : 'background:rgba(79,255,176,0.05); border-left:3px solid var(--accent)'}" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='${n.is_read ? 'transparent' : 'rgba(79,255,176,0.05)'}'" onclick="markNotifRead('${n.id}')">
+                    <div style="font-weight:600; color:${n.is_read ? 'white' : 'var(--accent)'}; margin-bottom:4px; display:flex; justify-content:space-between;">
+                        ${n.title}
+                        ${n.is_read ? '' : '<span style="width:8px; height:8px; background:var(--accent); border-radius:50%"></span>'}
+                    </div>
+                    <div style="color:var(--muted); font-size:0.75rem; line-height:1.4;">${n.message}</div>
+                    <div style="font-size:0.65rem; color:rgba(255,255,255,0.2); margin-top:6px; font-family:monospace;">${relTime(n.created_at)}</div>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error("Notif failed", err);
+        }
+    }
+
+    async function markNotifRead(id) {
+        await fetch(`${API}/support/notifications/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ is_read: true })
+        });
+        loadNotifications();
+    }
+
+    function toggleNotifs() {
+        const dropdown = document.getElementById('notif-dropdown');
+        const isOpen = dropdown.style.display === 'block';
+        
+        // Close others
+        dropdown.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) loadNotifications();
+    }
+
+    // Refund Logic
+    function openRefundModal() {
+      document.getElementById('refund-modal').classList.add('open');
+      document.getElementById('refund-step-survey').style.display = 'block';
+      document.getElementById('refund-step-bank').style.display = 'none';
+    }
+
+    function closeRefundModal() {
+      document.getElementById('refund-modal').classList.remove('open');
+    }
+
+    function nextRefundStep() {
+      const details = document.getElementById('refund-step-survey');
+      const bank = document.getElementById('refund-step-bank');
+      details.style.display = 'none';
+      bank.style.display = 'block';
+    }
+
+    function prevRefundStep() {
+      const details = document.getElementById('refund-step-survey');
+      const bank = document.getElementById('refund-step-bank');
+      details.style.display = 'block';
+      bank.style.display = 'none';
+    }
+
+    async function submitRefund() {
+      const details = document.getElementById('refund-bank-details').value.trim();
+      if (!details) {
+        showToast('Please enter your bank or UPI details.', 'error');
+        return;
+      }
+      
+      const survey = {
+          region: document.getElementById('survey-region').value,
+          reason: document.getElementById('survey-reason').value,
+          rating: document.getElementById('survey-rating').value,
+          feature_request: document.getElementById('survey-feature').value,
+          will_return: document.querySelector('input[name="survey-return"]:checked').value
+      };
+
+      const btn = document.getElementById('btn-submit-refund');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+      
+      try {
+        const res = await fetch(`${API}/payment/cancel-subscription`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ 
+              bank_details: { raw: details },
+              survey_results: survey
+          })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to submit refund');
+        
+        showToast('✅ Subscription cancelled. Refund request submitted.', 'success');
+        closeRefundModal();
+        await refreshUserInfo(); // Revert UI to free plan
+        
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Close notifications if clicked outside
+    document.addEventListener('click', (e) => {
+      const wrapper = document.querySelector('.notif-wrapper');
+      const dropdown = document.getElementById('notif-dropdown');
+      if (wrapper && !wrapper.contains(e.target) && dropdown) {
+        dropdown.style.display = 'none';
+      }
+    });
 
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     function relTime(iso) { const d = new Date(iso), now = new Date(), diff = (now - d) / 1000; if (diff < 60) return 'just now'; if (diff < 3600) return `${Math.floor(diff / 60)}m ago`; if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`; return `${Math.floor(diff / 86400)}d ago`; }

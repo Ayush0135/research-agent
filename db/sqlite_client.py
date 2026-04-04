@@ -6,22 +6,21 @@ from db.supabase_client import get_supabase_client
 # to ensure data persistence on platforms like Render/Vercel.
 
 async def save_research(user_id: str, query: str, format_type: str, result: str, download_url: str = None):
-    """Saves a research result to the Supabase 'research_history' table."""
+    """Saves a research result via RPC (Security Definer) to bypass RLS."""
     try:
         def _insert():
             sb = get_supabase_client()
-            sb.table("research_history").insert({
-                "user_id": user_id,
-                "query": query,
-                "format": format_type,
-                "result": result,
-                "download_url": download_url,
-                "created_at": datetime.utcnow().isoformat()
+            # Calling the security-definer RPC to ensure history is tracked for all users
+            sb.rpc("save_research_audit", {
+                "target_user_id": user_id,
+                "query_text": query,
+                "format_text": format_type,
+                "result_text": str(result)
             }).execute()
         
         await asyncio.to_thread(_insert)
     except Exception as e:
-        print(f"⚠️ Failed to save history to Supabase: {e}")
+        print(f"⚠️ Failed to save history to Supabase RPC: {e}")
 
 async def get_history(user_id: str, limit: int = 20) -> list[dict]:
     """Fetch recent research history for a user from Supabase."""

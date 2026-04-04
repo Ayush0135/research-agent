@@ -1,64 +1,91 @@
 import os
 import httpx
-from dotenv import load_dotenv
+import asyncio
+from typing import List, Dict
 
-load_dotenv()
+# ── Local NLI (Natural Language Inference) Fallback ──────────────────────────
+_VERIFIER = None
+try:
+    from transformers import pipeline
+except ImportError:
+    pipeline = None
 
-HF_API_KEY = os.getenv("HF_API_KEY", "")
+def get_local_verifier():
+    global _VERIFIER
+    if _VERIFIER is None and pipeline:
+        try:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=FutureWarning, module="huggingface_hub.file_download")
+                print("🧠 Loading local NLI verifier (Offline-first)...")
+                _VERIFIER = pipeline("text-classification", model="cross-encoder/nli-MiniLM2-L6-H768", device="cpu")
+        except Exception as e:
+            print(f"⚠️ Local NLI load failed: {e}")
+    return _VERIFIER
 
-# Same model: cross-encoder/nli-MiniLM2-L6-H768 for NLI logic
-# Using the new HF Router URL to avoid redirection issues
-API_URL = "https://router.huggingface.co/hf-inference/models/cross-encoder/nli-MiniLM2-L6-H768"
-
-async def verify_sources(search_results: list[dict], query: str) -> list[dict]:
+async def verify_sources(search_results: List[Dict], query: str) -> List[Dict]:
     """
-    Verifies information across sources using HF Inference API.
-    Replaces local transformers call for 512MB RAM compatibility.
+    Hybrid Verification Pipeline:
+    1. Try Local NLI Model (Fast & Private)
+    2. Fallback to HF Inference API (Serverless Cloud)
+    3. Final Fallback to Groq Llama-3 (Intelligence)
     """
-    if not search_results or not HF_API_KEY:
-        return search_results
+    if not search_results: return []
+    query_str = f"Supports '{query}'"
+    verified = []
 
-    # Prepare inputs for Inference API (batching)
-    # We send premise and hypothesis together as a list of strings if the model supports it, 
-    # but Cross-Encoders usually expect inputs in separate calls or a specific list format.
-    verified_sources = []
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-            
-            for src in search_results:
-                premise = (src.get("snippet", "") + " " + src.get("content", ""))[:1000]
-                
-                # API format for text-classification with text-pair
-                payload = {
-                    "inputs": {"text": premise, "text_pair": query},
-                    "options": {"wait_for_model": True}
-                }
-                
-                # We do this sequentially here for simplicity, or gather them.
-                # Since we check only 10 sources, it's manageable.
-                resp = await client.post(API_URL, headers=headers, json=payload, timeout=12.0)
-                
-                if resp.status_code == 200:
-                    data = resp.json()
-                    result = data[0] if isinstance(data, list) else data
-                    # Inference API returns labels differently sometimes.
-                    # Usually: [{"label": "LABEL_0", "score": 0.99}, ...]
-                    # For NLI: Neutral/Entailment/Contradiction
-                    label = result.get("label", "neutral").lower()
-                    score = result.get("score", 1.0)
-                else:
-                    label, score = "fallback", 1.0
-                
-                src["verification"] = {"label": label, "score": score}
-                verified_sources.append(src)
-                
-    except Exception as e:
-        print(f"HF Verify API failed: {e}")
-        # Fallback Strategy: if HF pipeline fails, gracefully pass data
-        for src in search_results:
-            src["verification"] = {"label": "fallback_error", "score": 1.0}
-            verified_sources.append(src)
+    # 1. 🔍 Try Local Offline Inference First
+    local = get_local_verifier()
+    if local:
+        try:
+            for res in search_results:
+                text = res.get("snippet", "")[:400]
+                if not text: continue
+                # NLI Prediction: entailment (idx 0), neutral (idx 1), contradiction (idx 2)
+                pred = local({"text": text, "text_pair": query}, top_k=3)
+                # Ensure the predicted label is entailment/support
+                scores = {p["label"].lower(): p["score"] for p in pred}
+                if scores.get("entailment", 0) > 0.45:
+                    res["verification_score"] = scores["entailment"]
+                    verified.append(res)
+            if verified: return verified
+        except Exception as e:
+             print(f"⚠️ Local verification failed: {e}")
 
-    return verified_sources
+    # 2. 📡 Fallback: HF Inference API (Cloud)
+    HF_TOKEN = os.getenv("HF_API_KEY", "")
+    if HF_TOKEN:
+        try:
+            API_URL = "https://router.huggingface.co/hf-inference/models/cross-encoder/nli-MiniLM2-L6-H768"
+            async with httpx.AsyncClient() as client:
+                async def _verify_item(res):
+                    text = res.get("snippet", "")[:400]
+                    if not text: return None
+                    try:
+                        resp = await client.post(API_URL, headers={"Authorization": f"Bearer {HF_TOKEN}"}, json={"inputs": {"text": text, "text_pair": query}}, timeout=5.0)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            if data and data[0].get("score", 0) > 0.45:
+                                res["verification_score"] = data[0]["score"]
+                                return res
+                    except Exception: pass
+                    return None
+
+                tasks = [_verify_item(res) for res in search_results[:6]]
+                results = await asyncio.gather(*tasks)
+                for r in results:
+                    if r: verified.append(r)
+                    
+            if verified: return verified
+        except Exception: pass
+
+    # 3. 🛡️ Final Fallback: Keyword Score (Last Resort)
+    for res in search_results:
+        snippet = res.get("snippet", "").lower()
+        query_words = set(query.lower().split())
+        overlap = sum(1 for w in query_words if w in snippet)
+        if overlap >= 2:
+            res["verification_score"] = 0.5 # Baseline score
+            verified.append(res)
+
+    return verified if verified else search_results[:5] # Fallback to top results

@@ -15,28 +15,31 @@ load_dotenv()
 # ── Model Config ──────────────────────────────────────────────────────────────
 
 HF_MODELS = [
-    "mistralai/Mistral-7B-Instruct-v0.3",
-    "HuggingFaceH4/zephyr-7b-beta",
     "Qwen/Qwen2.5-7B-Instruct",
+    "meta-llama/Meta-Llama-3-8B-Instruct",
+    "mistralai/Mistral-Nemo-Instruct-2407",
 ]
 
 GROQ_MODELS = [
     "llama-3.3-70b-versatile",   # Primary for Elaborate Content
-    "llama-3.1-70b-versatile",
     "llama-3.1-8b-instant",
+    "mixtral-8x7b-32768",
 ]
 
-HF_API_BASE = "https://api-inference.huggingface.co/v1/chat/completions"
+HF_API_BASE = "https://router.huggingface.co/v1/chat/completions"
 
 # ── Elaborate Token Budgets ───────────────────────────────────────────────────
 # (max_input, max_output)
-# Setting output to 4096 (max possible for most free APIs)
+# IMPORTANT: Groq counts (input_tokens + max_tokens) towards the TPM limit.
+# For free `on_demand` tier, limit is 6000 TPM. So max_input + max_output MUST be < 6000.
 MODEL_BUDGETS = {
-    "llama-3.3-70b-versatile": (10000, 4096), # 128k context, huge output
-    "llama-3.1-70b-versatile": (10000, 4096),
-    "mistralai/Mistral-7B-Instruct-v0.3": (6000, 3000),
-    "llama-3.1-8b-instant": (6000, 2500),
-    "default": (4000, 2000),
+    "llama-3.3-70b-versatile": (2800, 1000), 
+    "llama-3.1-8b-instant": (2800, 1000),    
+    "mixtral-8x7b-32768": (2800, 1000),      
+    "Qwen/Qwen2.5-7B-Instruct": (3000, 1000),
+    "meta-llama/Meta-Llama-3-8B-Instruct": (3000, 1000),
+    "mistralai/Mistral-Nemo-Instruct-2407": (3000, 1000),
+    "default": (2500, 1000),
 }
 
 def _estimate_tokens(text: str) -> int:
@@ -69,15 +72,16 @@ FORMAT_PROMPTS = {
         "USE MAXIMUM VERBOSITY. Provide deep explanations. Cite [Source X] for every claim."
     ),
     "research paper": (
-        "Develop a complete, multi-page ACADEMIC RESEARCH PAPER. Aim for maximal depth.\n"
-        "# [Title]\n**Abstract** (Detailed explanation of scope)\n"
-        "## 1. Introduction (Historical context, Problem Statement, Methodology used)\n"
-        "## 2. Comprehensive Literature Review (Group findings by theme, compare sources)\n"
-        "## 3. Results & Quantitative Analysis (Highlight statistics, cite [Source X])\n"
-        "## 4. Nuanced Discussion (Interpretations, broader impact, secondary effects)\n"
-        "## 5. Critical Limitations & Scope Gaps\n"
-        "## 6. Formal Conclusions (numbered, evidence-based)\n## 7. Detailed References\n"
-        "Formal academic tone. DO NOT TRUNCATE. Be exhaustive."
+        "Develop a MASSIVE, MULTI-PAGE ACADEMIC DISSERTATION. Aim for maximal depth.\n"
+        "CRITICAL INFLUENCE: YOU MUST WRITE AT LEAST 2500 WORDS. EXPAND EVERY SECTION HEAVILY. DO NOT SKIM.\n"
+        "# [Title]\n**Abstract** (Detailed, multi-paragraph explanation of scope)\n"
+        "## 1. Introduction (Historical context, Problem Statement, Methodology used. Minimum 3 paragraphs.)\n"
+        "## 2. Comprehensive Literature Review (Group findings by theme, compare sources at length)\n"
+        "## 3. Results & Quantitative Analysis (Highlight vast statistics, cite [Source X] deeply)\n"
+        "## 4. Nuanced Discussion (Interpretations, broader impact, secondary effects, paradigm shifts explored)\n"
+        "## 5. Critical Limitations & Scope Gaps (In-depth analysis of what is unknown or constrained)\n"
+        "## 6. Formal Conclusions (numbered, highly evidence-based, paragraph-length points)\n## 7. Detailed References\n"
+        "Formal academic tone. DO NOT TRUNCATE ANY SECTION. WRITE EXHAUSTIVELY."
     ),
     "comparison table": (
         "Generate a DETAILED COMPARISON. Must include multiple tables and deep analysis.\n"
@@ -107,89 +111,214 @@ DEFAULT_FORMAT_PROMPT = (
 
 # ── Core LLM caller ───────────────────────────────────────────────────────────
 
-async def _call_llm(client: httpx.AsyncClient, endpoint: str, key: str, model: str, messages: list, max_tokens: int) -> str:
-    resp = await client.post(
-        endpoint,
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": model, "messages": messages, "temperature": 0.35, "max_tokens": max_tokens},
-        timeout=150.0,
-    )
-    if resp.status_code == 429: raise Exception(f"429 rate-limited on '{model}'")
-    if resp.status_code != 200: raise Exception(f"HTTP {resp.status_code}: {resp.text[:300]}")
-    return resp.json()["choices"][0]["message"]["content"]
+import json
 
-# ── Main entry point ──────────────────────────────────────────────────────────
+async def _call_llm_stream(client: httpx.AsyncClient, endpoint: str, key: str, model: str, messages: list, max_tokens: int):
+    payload = {"model": model, "messages": messages, "temperature": 0.35, "max_tokens": max_tokens, "stream": True}
+    provider = "Groq" if "groq" in endpoint else "HF"
+    
+    async with client.stream("POST", endpoint, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, json=payload, timeout=150.0) as resp:
+        if resp.status_code == 429:
+            raise Exception(f"RATE_LIMIT: 429 rate-limited on '{model}'")
+        if resp.status_code != 200:
+            err = await resp.aread()
+            raise Exception(f"API Error ({provider}): {err.decode('utf-8')[:200]}")
+            
+        async for line in resp.aiter_lines():
+            if line.startswith("data: "):
+                data_str = line[6:]
+                if data_str.strip() == "[DONE]": break
+                try:
+                    data = json.loads(data_str)
+                    if "choices" in data and len(data["choices"]) > 0:
+                        delta = data["choices"][0].get("delta", {})
+                        if "content" in delta and delta["content"]:
+                            yield delta["content"]
+                except json.JSONDecodeError:
+                    pass
 
-async def generate_report(query: str, format_type: str, ranked_chunks: list[dict], images: list[dict] = None) -> str:
+# ── Load Balancer ───────────────────────────────────────────────────────────
+import time
+import random
+from dataclasses import dataclass, field
+
+@dataclass
+class LLMNode:
+    provider: str
+    endpoint: str
+    key: str
+    model: str
+    is_deep: bool  # True for 70B+ models
+    priority: int  # Lower is better
+    failure_count: int = 0
+    cool_down_until: float = 0.0
+
+class LLMLoadBalancer:
+    def __init__(self, nodes: list[LLMNode]):
+        self.nodes = nodes
+
+    def get_best_node(self, is_deep_format: bool) -> LLMNode:
+        now = time.time()
+        # Filter nodes that are not in cool-down
+        available = [n for n in self.nodes if n.cool_down_until < now and n.key]
+        
+        if not available:
+            # Emergency: Reset cool-downs if everything is locked
+            for n in self.nodes: n.cool_down_until = 0
+            available = [n for n in self.nodes if n.key]
+
+        # Prioritize based on format depth and then weight/priority
+        # For deep formats, we want is_deep=True nodes first.
+        # Otherwise, we prefer fast nodes (is_deep=False).
+        
+        def _score(n: LLMNode):
+            # Base score is priority
+            score = n.priority * 10
+            # Penalty if it doesn't match the depth requirement
+            if is_deep_format and not n.is_deep: score += 100
+            if not is_deep_format and n.is_deep: score += 50
+            # Random jitter for load balancing among equal nodes
+            return score + random.uniform(0, 5)
+
+        available.sort(key=_score)
+        return available[0]
+
+    def report_failure(self, node: LLMNode, is_rate_limit: bool):
+        node.failure_count += 1
+        # If rate limited, cool down for 60s. If other error, 30s.
+        penalty = 60 if is_rate_limit else 30
+        node.cool_down_until = time.time() + penalty
+        print(f"⚠️ Node {node.model} reported failure. Cooling down for {penalty}s.")
+
+# Initialize Global Balancer
+def _init_balancer():
     HF_KEY    = os.getenv("HF_API_KEY", "")
     GROQ_KEY  = os.getenv("GROQ_API_KEY", os.getenv("LLM_API_KEY", ""))
     GROQ_URL  = os.getenv("LLM_API_URL", "https://api.groq.com/openai/v1/chat/completions")
-    
-    if not ranked_chunks: return "No verifiable sources found."
+
+    nodes = [
+        # Groq 70B (Primary for Deep)
+        LLMNode("Groq", GROQ_URL, GROQ_KEY, "llama-3.3-70b-versatile", True, 1),
+        # Mixtral (Middle Ground)
+        LLMNode("Groq", GROQ_URL, GROQ_KEY, "mixtral-8x7b-32768", True, 2),
+        # Fast Nodes
+        LLMNode("Groq", GROQ_URL, GROQ_KEY, "llama-3.1-8b-instant", False, 3),
+        LLMNode("HF", HF_API_BASE, HF_KEY, "Qwen/Qwen2.5-7B-Instruct", False, 4),
+        LLMNode("HF", HF_API_BASE, HF_KEY, "meta-llama/Meta-Llama-3-8B-Instruct", False, 5),
+    ]
+    return LLMLoadBalancer(nodes)
+
+_BALANCER = None
+
+def get_balancer():
+    global _BALANCER
+    if _BALANCER is None:
+        _BALANCER = _init_balancer()
+    return _BALANCER
+
+# ── Global Client ────────────────────────────────────────────────────────────
+_ASYNC_CLIENT = None
+
+def get_async_client():
+    global _ASYNC_CLIENT
+    if _ASYNC_CLIENT is None:
+        _ASYNC_CLIENT = httpx.AsyncClient(timeout=150.0, limits=httpx.Limits(max_connections=20, max_keepalive_connections=5))
+    return _ASYNC_CLIENT
+
+# ── Config Cache ─────────────────────────────────────────────────────────────
+_CONFIG_CACHE = {"data": {}, "expiry": 0}
+
+async def _get_admin_config():
+    """Fetches global platform configuration from database with 5-min caching."""
+    import time
+    if _CONFIG_CACHE["expiry"] > time.time():
+        return _CONFIG_CACHE["data"]
+        
+    try:
+        from db.supabase_client import get_supabase_client
+        import asyncio
+        sb = get_supabase_client()
+        res = await asyncio.to_thread(lambda: sb.table("platform_config").select("*").execute())
+        config_data = {item['config_key']: item['config_value'] for item in res.data}
+        _CONFIG_CACHE["data"] = config_data
+        _CONFIG_CACHE["expiry"] = time.time() + 300 # 5 min cache
+        return config_data
+    except Exception as e:
+        print(f"Error fetching admin config: {e}")
+        return _CONFIG_CACHE["data"] or {}
+
+# ── Main entry point ──────────────────────────────────────────────────────────
+
+async def generate_report(query: str, format_type: str, ranked_chunks: list[dict], images: list[dict] = None):
+    if not ranked_chunks: 
+        yield "No verifiable sources found."
+        return
+
+    # Load Admin Overrides
+    config = await _get_admin_config()
+    admin_instr = config.get('system_instruction', '')
+    allow_images = config.get('image_generation', True)
 
     fmt_key   = format_type.lower().strip()
     fmt_instr = FORMAT_PROMPTS.get(fmt_key, DEFAULT_FORMAT_PROMPT)
+    is_deep_format = fmt_key in ["research paper", "detailed report"]
 
-    # Use Top 12 Chunks for context
+    # Context Construction
     context_parts = [f"[Source {i+1}] {c.get('title','Unknown')}\nURL: {c.get('url','')}\n{c.get('text','')}" for i, c in enumerate(ranked_chunks[:12])]
     prompt_overhead = _estimate_tokens(fmt_instr) + _estimate_tokens(query) + 200
 
-    hf_ready   = bool(HF_KEY and not HF_KEY.startswith("hf_YOUR"))
-    groq_ready = bool(GROQ_KEY)
-
-    # SMART PRIORITY:
-    # If the format is 'Research Paper' or 'Detailed Report', put Groq 70B (Best Quality) FIRST.
-    # Otherwise, put HF first (Fastest/Free).
-    attempts = []
+    balancer = get_balancer()
+    client = get_async_client()
     
-    is_deep_format = fmt_key in ["research paper", "detailed report"]
+    max_retries = 3
+    for attempt in range(max_retries):
+        node = balancer.get_best_node(is_deep_format)
+        if not node: break
 
-    # 1. Groq Chain
-    groq_attempts = [(GROQ_URL, GROQ_KEY, m) for m in GROQ_MODELS]
-    # 2. HF Chain
-    hf_attempts = [(HF_API_BASE, HF_KEY, m) for m in HF_MODELS]
+        try:
+            max_in, max_out = MODEL_BUDGETS.get(node.model, MODEL_BUDGETS["default"])
+            trimmed_ctx     = _trim_context(context_parts, max_in, prompt_overhead)
+            
+            system_prompt = (
+                f"ADMIN RULE: {admin_instr}\n\n"
+                f"Format: '{format_type}'. MODE: EXHAUSTIVE VERBOSITY.\n\n"
+                f"{fmt_instr}\n\n"
+                "RULES:\n"
+                "- WRITE A MASSIVE AMOUNT OF TEXT.\n"
+                "- Every claim must have an inline [Source X] citation.\n"
+                "- 📊 Use Mermaid (```mermaid) for diagrams.\n"
+                "- 📈 Always include a detailed markdown table.\n"
+            )
+            
+            if allow_images:
+                system_prompt += "\n- 🖼️ Prioritize images from the section below. Embed with `![Source-Context Image](URL)`."
 
-    if is_deep_format:
-        attempts = groq_attempts + hf_attempts
-    else:
-        attempts = hf_attempts + groq_attempts
+            img_section = "\n\n=== ATTACHED IMAGES ===\n"
+            if images and allow_images:
+                for img in images:
+                    img_section += f"- Title: {img['title']}\n  URL: {img['url']}\n"
+            else:
+                img_section += "(No images available)"
 
-    async with httpx.AsyncClient() as client:
-        for endp, key, model in attempts:
-            if not key: continue
-            provider = "Groq" if "groq" in endp else "HF"
-            try:
-                max_in, max_out = MODEL_BUDGETS.get(model, MODEL_BUDGETS["default"])
-                trimmed_ctx     = _trim_context(context_parts, max_in, prompt_overhead)
-                
-                system_prompt = (
-                    f"Format: '{format_type}'. MODE: EXHAUSTIVE VERBOSITY.\n\n"
-                    f"{fmt_instr}\n\n"
-                    "RULES:\n"
-                    "- DO NOT summarize; write deep, multi-paragraph sections.\n"
-                    "- Every claim must have an inline [Source X] citation.\n"
-                    "- Use specific names, numbers, data points, and percentages.\n"
-                    "- Format with ## headers, tables, and bold for key terms.\n"
-                    "- 📊 IMPORTANT: Use Mermaid diagrams (```mermaid ... ```) for flows, hierarchies, or timelines where relevant. DO NOT USE [Source X] OR **BOLD** INSIDE MERMAID BLOCKS as it breaks the syntax.\n"
-                    "- 📈 IMPORTANT: Always include at least one detailed markdown table for statistics or comparisons. Use the standard pipe `|` syntax for tables.\n"
-                    "- 🖼️ IMPORTANT: Prioritize images from the 'ATTACHED IMAGES' section below. These are extracted directly from the research sources. Embed them using `![Source-Context Image](URL)` and explicitly describe how they relate to the text."
-                )
-                
-                img_section = "\n\n=== ATTACHED IMAGES (Use these URLs to embed in report) ===\n"
-                if images:
-                    for img in images:
-                        img_section += f"- Title: {img['title']}\n  URL: {img['url']}\n"
-                else:
-                    img_section += "(No images available for this query)"
+            user_prompt = f"Research Query: {query}\n\n{img_section}\n\n=== VERIFIED SOURCE DATA ===\n{trimmed_ctx}\n\nGenerate '{format_type}' now."
+            
+            yield {"type": "alert", "content": f"⚖️ [Load Balancer] Routing to {node.provider} ({node.model})..."}
+            
+            stream_gen = _call_llm_stream(client, node.endpoint, node.key, node.model, [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], max_tokens=max_out)
+            
+            has_yielded = False
+            async for chunk in stream_gen:
+                has_yielded = True
+                yield chunk
+            
+            if has_yielded:
+                return
 
-                user_prompt = f"Research Query: {query}\n\n{img_section}\n\n=== VERIFIED SOURCE DATA ===\n{trimmed_ctx}\n\nGenerate the complete, elaborate '{format_type}' now."
+        except Exception as e:
+            err_str = str(e)
+            is_rate_limit = "RATE_LIMIT" in err_str or "429" in err_str
+            balancer.report_failure(node, is_rate_limit)
+            yield {"type": "alert", "content": f"⚠️ {node.model} failed, load balancer re-routing..."}
+            continue
 
-                print(f"🤖 Generating elaborate output with [{provider}] {model}...")
-                result = await _call_llm(client, endp, key, model, [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], max_tokens=max_out)
-                return result
-
-            except Exception as e:
-                print(f"❌ [{provider}] {model} failed: {e}")
-                continue
-
-    return "⚠️ AI generation failed. No providers available."
+    yield "⚠️ Generation failed after load balancing retries."
