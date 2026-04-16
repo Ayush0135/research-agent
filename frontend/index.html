@@ -2395,15 +2395,29 @@
       ws.onopen = () => { ws.send(JSON.stringify({ query, format })); setStatus('Connected. Starting pipeline…', 'active'); };
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        const { status, stage, result, download_url, timings, total_time } = data;
+        const { status, stage, content, result, download_url, timings, total_time } = data;
         setStatus(status, stage === 'error' ? 'error' : (stage === 'done' ? 'done' : 'active'));
         updateStage(stage);
-        if (stage === 'done') {
+        
+        if (stage === 'writing' && content) {
+          // Live stream into the result-body area
+          const resBody = document.getElementById('result-content');
+          if (resBody) {
+             resBody.innerHTML = mdToHtml( (window._currentMarkdown || '') + content );
+             window._currentMarkdown = (window._currentMarkdown || '') + content;
+             // Scroll slightly if near bottom
+             const panel = document.getElementById('results-panel');
+             if (panel.scrollHeight - panel.scrollTop < 1000) panel.scrollTop = panel.scrollHeight;
+          }
+        }
+        else if (stage === 'done') {
           setResearching(false);
           showResult(query, result, download_url, timings, total_time);
           loadHistory(); refreshUserInfo(); ws.close();
+          window._currentMarkdown = ''; // Reset for next run
           showToast(`✅ Done in ${total_time ? total_time + 's' : 'a moment'}!`, 'success');
-        } else if (stage === 'error') {
+        }
+        else if (stage === 'error') {
           setResearching(false);
           const msg = result || status || '';
           if (msg.toLowerCase().includes('insufficient credits') || msg.toLowerCase().includes('upgrade')) {
@@ -2424,7 +2438,16 @@
     const stageOrder = ['init', 'cache_check', 'search', 'verify', 'process', 'rank', 'generate', 'format', 'cleanup', 'done'];
     function updateStage(stage) { const idx = stageOrder.indexOf(stage); if (idx === -1) return; stageOrder.forEach((s, i) => { const el = document.getElementById(`stage-${s}`); if (!el) return; el.className = 'stage' + (i < idx ? ' done' : i === idx ? ' active' : ''); }); }
     function setStatus(text, state) { document.getElementById('status-text').textContent = text; document.getElementById('status-dot').className = 'status-dot' + (state ? ` ${state}` : ''); }
-    function showStreamContainer(q) { document.getElementById('results-panel').innerHTML = `<div class="result-card"><div class="result-header"><div class="result-title">⟳ ${esc(q)}</div></div><div class="stream-text" id="stream-body"></div></div>`; }
+    function showStreamContainer(q) { 
+      document.getElementById('results-panel').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <div class="result-title">🧩 AI Researching: ${esc(q)}</div>
+          </div>
+          <div class="stream-text" id="stream-body" style="background:#000; color:#0f0; font-family:monospace; padding:15px; font-size:0.8rem; line-height:1.4; border-bottom:1px solid var(--border); max-height:200px; overflow-y:auto;"></div>
+          <div class="result-body" id="result-content" style="min-height:100px;"></div>
+        </div>`; 
+    }
     function showResult(query, result, dlUrl, timings, totalTime) {
       let timingHtml = '';
       if (timings && totalTime) {

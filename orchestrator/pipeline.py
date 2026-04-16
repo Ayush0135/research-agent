@@ -1,6 +1,7 @@
 import json
 import asyncio
 import datetime
+import time
 from typing import AsyncGenerator
 
 from services.search_service import federated_search, fetch_images
@@ -9,6 +10,7 @@ from services.process_service import chunk_documents
 from services.rank_service import rank_and_store_chunks
 from services.generate_service import generate_report
 from services.paper_service import generate_academic_pdf
+from services.payment_service import check_credits, deduct_credits
 from db.supabase_client import get_supabase_client
 
 async def execute_pipeline(query: str, user_id: str, format_type: str = "detailed report") -> AsyncGenerator[str, None]:
@@ -18,9 +20,17 @@ async def execute_pipeline(query: str, user_id: str, format_type: str = "detaile
     - Streaming Updates via WebSocket
     - Automatic PDF Generation & Verification ID
     - Background Verification & Persistent Storage
+    - Credit Deduction on Completion (as per System Design)
     """
     
+    start_time = time.time()
     yield json.dumps({"status": "🚀 Starting research workflow...", "stage": "start"})
+
+    # 0. Credit Check (System Design Enforcement)
+    has_credits = await check_credits(user_id)
+    if not has_credits:
+        yield json.dumps({"status": "❌ Insufficient credits. Please upgrade your plan.", "stage": "error"})
+        return
     
     try:
         # 1. Parallel Federated Search + Image Search
@@ -62,36 +72,58 @@ async def execute_pipeline(query: str, user_id: str, format_type: str = "detaile
             # Generate a unique Verification ID
             doc_id = f"DOC-{datetime.datetime.now().strftime('%Y%m%d%H%M')}-{user_id[:4].upper()}"
             
-            # Generate the PDF (Paper Service)
+            # Generate the PDF in a background thread to prevent WebSocket hangs
             pdf_path = f"frontend/papers/{doc_id}.pdf"
-            relative_url = generate_academic_pdf(full_markdown, query, output_path=pdf_path, reference_id=doc_id)
+            relative_url = await asyncio.to_thread(
+                generate_academic_pdf, 
+                full_markdown, 
+                query, 
+                output_path=pdf_path, 
+                reference_id=doc_id
+            )
+            
+            # Deduct Credit (System Design: Paid Plan -> Deduct Credits)
+            try:
+                await deduct_credits(user_id)
+            except Exception as e:
+                print(f"Credit deduction failed: {e}")
             
             # Save to Database (Background)
             def _save_to_db():
                 try:
                     sb = get_supabase_client()
-                    sb.table("verified_documents").insert({
+                    
+                    # 1. Save to verified_documents (Receipt/Certification)
+                    sb.table("verified_documents").upsert({
                         "id": doc_id,
                         "user_id": user_id,
-                        "query": query,
-                        "title": query[:100],
-                        "pdf_url": relative_url,
-                        "content_snapshot": full_markdown[:2000], # store preview
-                        "verified_at": datetime.datetime.now().isoformat()
+                        "title": query[:200],
+                        "pdf_url": relative_url
                     }).execute()
                     
-                    # Deduct credit (optional, check if implementation exists in payment_service)
-                    # For now just log it
+                    # 2. Save to research_history (User Dashboard)
+                    sb.table("research_history").insert({
+                        "user_id": user_id,
+                        "query": query,
+                        "format": format_type,
+                        "result": full_markdown,
+                        "download_url": relative_url
+                    }).execute()
+                    
                 except Exception as e:
-                    print(f"Failed to save document record: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             await asyncio.to_thread(_save_to_db)
             
+            total_time = round(time.time() - start_time, 1)
             yield json.dumps({
                 "status": "✅ Research complete. Document certified.",
-                "stage": "complete",
-                "pdf_url": relative_url,
-                "doc_id": doc_id
+                "stage": "done",
+                "result": full_markdown,
+                "download_url": relative_url,
+                "doc_id": doc_id,
+                "total_time": total_time
             })
         else:
             yield json.dumps({"status": "⚠️ Result too short for certification.", "stage": "complete"})
