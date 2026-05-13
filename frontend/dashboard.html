@@ -416,7 +416,8 @@
   <div id="toast" class="toast">Profile Updated Successfully!</div>
 
   <script>
-    const API = window.location.origin;
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const API = isLocal ? "http://127.0.0.1:8000" : "https://YOUR-RENDER-APP.onrender.com"; // TODO: Replace with your Render URL
     let authToken = localStorage.getItem('ra_token');
     let currentUser = JSON.parse(localStorage.getItem('ra_user'));
     let activeWs = null, isResearching = false;

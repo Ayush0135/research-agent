@@ -232,3 +232,75 @@ def generate_appeal_decision_notice(data: dict) -> bytes:
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes
+
+def generate_credit_grant_brief(data: dict) -> bytes:
+    """ Generates a professional brief for manual credit allocation. """
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+    
+    brand_color = colors.HexColor("#38bdf8") # Sky blue for credits
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=22, spaceAfter=5, textColor=brand_color)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=10, textColor=colors.grey, spaceAfter=20)
+    normal_style = styles["Normal"]
+    
+    elements = []
+
+    # ── HEADER ──
+    logo_path = "frontend/surefact_logo.png"
+    header_data = []
+    if os.path.exists(logo_path):
+        img = Image(logo_path, width=32, height=32)
+        header_data.append([img, Paragraph("SUREFACT ALLOCATION", title_style)])
+    else:
+        header_data.append(["", Paragraph("SUREFACT ALLOCATION", title_style)])
+        
+    head_table = Table(header_data, colWidths=[40, 400])
+    head_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
+    elements.append(head_table)
+    elements.append(Paragraph("Official Research Credit Grant Brief", subtitle_style))
+    elements.append(Spacer(1, 20))
+
+    # ── CONTENT TABLE ──
+    table_data = [
+        [Paragraph("<b>Transaction Type</b>", normal_style), "ADMINISTRATIVE CREDIT GRANT"],
+        [Paragraph("<b>Recipient Account</b>", normal_style), data.get('email', 'N/A')],
+        [Paragraph("<b>Credits Allocated</b>", normal_style), f"+{data.get('credits', 0)} Research Tokens"],
+        [Paragraph("<b>Current Balance</b>", normal_style), f"{data.get('new_total', 0)} Tokens"],
+        [Paragraph("<b>Allocation Reason</b>", normal_style), data.get('reason', 'Administrative Adjustment')],
+        [Paragraph("<b>Authorized By</b>", normal_style), data.get('admin_email', 'Surefact Admin')],
+        [Paragraph("<b>Date of Issue</b>", normal_style), datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
+    ]
+
+    t = Table(table_data, colWidths=[150, 320])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,-1), colors.HexColor("#f0f9ff")),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#0c4a6e")),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#bae6fd")),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 14),
+        ('TOPPADDING', (0,0), (-1,-1), 14),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 30))
+
+    # ── EXPLANATION ──
+    elements.append(Paragraph("<b>Researcher Note:</b>", normal_style))
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph(
+        "These tokens have been added to your account for research purposes. You can use these tokens to "
+        "access deep research capabilities, generate certified reports, and analyze complex datasets. "
+        "Research tokens have no monetary value and are non-transferable.",
+        ParagraphStyle('Note', fontSize=9, leading=14, textColor=colors.grey)
+    ))
+
+    # ── FOOTER SEAL ──
+    elements.append(Spacer(1, 60))
+    elements.append(Paragraph("● Certified Allocation Record ● Surefact Intelligence Systems ●", ParagraphStyle('Seal', fontSize=8, textColor=colors.lightgrey, alignment=1)))
+
+    doc.build(elements)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    return pdf_bytes
+

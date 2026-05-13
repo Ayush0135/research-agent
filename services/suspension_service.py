@@ -3,6 +3,7 @@ Account Suspension Service
 Handles admin-initiated user bans with PDF notices and email delivery.
 """
 import asyncio
+from typing import Optional, Dict
 from datetime import datetime, timezone, timedelta
 from db.supabase_client import get_supabase_client
 from db.redis_client import redis_client
@@ -197,7 +198,7 @@ async def suspend_user(user_id: str, email: str, reason_code: str, admin_email: 
     }
 
 
-async def check_suspension(email: str) -> dict | None:
+async def check_suspension(email: str) -> Optional[dict]:
     """
     Check if an email is currently under an active suspension.
     Returns the suspension record if banned, None if clear.

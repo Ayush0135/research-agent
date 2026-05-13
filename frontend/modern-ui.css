@@ -604,17 +604,25 @@ nav {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: var(--accent);
+    min-width: 22px;
+    height: 18px;
+    background: var(--vibrant-green);
     color: black;
     font-size: 0.65rem;
     font-weight: 800;
     border-radius: 4px;
     margin: 0 4px;
+    padding: 0 4px;
     vertical-align: middle;
     cursor: help;
 }
+
+.result-body h3 { color: white; margin: 24px 0 12px; font-size: 1.1rem; font-weight: 700; }
+.result-body h4 { color: var(--text-muted); margin: 20px 0 8px; font-size: 1rem; font-weight: 600; }
+.result-body blockquote { border-left: 3px solid var(--accent); background: rgba(255,255,255,0.03); padding: 12px 20px; margin: 20px 0; font-style: italic; color: var(--text-muted); border-radius: 0 8px 8px 0; }
+.result-body pre { background: #111; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); overflow-x: auto; margin: 20px 0; }
+.result-body code { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
+.result-body pre code { background: transparent; padding: 0; color: var(--text-main); }
 
 .result-img-wrap {
     margin: 30px 0;

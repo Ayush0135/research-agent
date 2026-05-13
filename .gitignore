@@ -9,3 +9,7 @@ test_*.py
 .DS_Store
 test_venv/
 
+env/
+frontend/papers/
+startup.log
+push_output.txt

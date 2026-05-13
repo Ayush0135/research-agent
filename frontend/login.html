@@ -141,7 +141,8 @@
   </div>
 
   <script>
-    const API = window.location.origin;
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const API = isLocal ? "http://127.0.0.1:8000" : "https://YOUR-RENDER-APP.onrender.com"; // TODO: Replace with your Render URL
     let currentEmail = '';
 
     // Check if already logged in

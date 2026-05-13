@@ -4,9 +4,9 @@ from typing import List, Optional
 import asyncio
 import uuid
 from db.supabase_client import get_supabase_client
-from db.redis_client import set_cache, get_cache
+from db.redis_client import redis_client, set_cache, get_cache
 from services.otp_service import send_otp, verify_otp, send_email_with_attachment
-from services.receipt_service import generate_refund_receipt
+from services.receipt_service import generate_refund_receipt, generate_credit_grant_brief
 from datetime import datetime
 import os
 import httpx
@@ -34,6 +34,10 @@ class VerifyRequest(BaseModel):
 
 class ConfigUpdateRequest(BaseModel):
     configs: dict # {key: value}
+
+class GrantCreditsRequest(BaseModel):
+    credits: int
+    reason: Optional[str] = "Admin Bonus"
 
 # ── ADMIN AUTH MIDDLEWARE (Decoupled from User Auth) ──
 async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
@@ -227,6 +231,99 @@ async def get_user_history_admin(user_id: str, admin: dict = Depends(require_adm
         return {"history": history_data, "limit": limit, "debug_count": len(history_data)}
     except Exception as e:
         print(f"Error fetching user history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/users/{user_id}/grant-credits")
+async def grant_credits(user_id: str, payload: GrantCreditsRequest, admin: dict = Depends(require_admin)):
+    """Grants random/manual credits to a user and sends a notification."""
+    try:
+        sb = get_supabase_client()
+        
+        # 1. Update Credits via Security Definer RPC (Atomic)
+        # Assuming we have a grant_credits_v1 or similar, but for now we use direct table update
+        def _execute():
+            # Get current credits
+            res = sb.table("user_credits").select("credits_remaining, email").eq("user_id", user_id).execute()
+            if not res.data:
+                raise HTTPException(404, "User not found in credits system.")
+            
+            curr = res.data[0]
+            new_total = curr["credits_remaining"] + payload.credits
+            email = curr.get("email")
+            
+            # Update
+            sb.table("user_credits").update({
+                "credits_remaining": new_total,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("user_id", user_id).execute()
+            
+            # 2. Add Notification (using existing RPC pattern)
+            # We'll try to use create_internal_notification if it exists, 
+            # or just insert to notifications table if we found it.
+            # Based on api/support.py, they use RPCs for everything.
+            # I will assume 'create_notification_v1' exists or I will create it.
+            try:
+                sb.rpc("create_notification_v1", {
+                    "target_user_id": user_id,
+                    "target_title": "🎁 Credits Granted",
+                    "target_message": f"Administrator ({admin['email']}) has granted you {payload.credits} research credits. Reason: {payload.reason}",
+                    "target_type": "credit_grant"
+                }).execute()
+            except Exception as ne:
+                print(f"Notification failed (swallowed): {ne}")
+                
+            return {"success": True, "new_credits": new_total, "email": email}
+            
+        result = await asyncio.to_thread(_execute)
+        
+        # 3. Clear Cache so User sees it instantly on fresh load
+        await redis_client.delete(f"profile:{user_id}")
+
+        # 4. Generate PDF Brief and Send Email
+        try:
+            user_email = result.get("email")
+            if user_email:
+                # Generate PDF
+                pdf_data = {
+                    "email": user_email,
+                    "credits": payload.credits,
+                    "new_total": result["new_credits"],
+                    "reason": payload.reason,
+                    "admin_email": admin["email"]
+                }
+                pdf_bytes = await asyncio.to_thread(generate_credit_grant_brief, pdf_data)
+                
+                # Compose Email HTML
+                html_body = f"""
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; line-height: 1.6;">
+                    <h2 style="color: #0ea5e9;">🎁 Research Credits Allocated</h2>
+                    <p>Hello,</p>
+                    <p>An administrator has manually added research credits to your Surefact account.</p>
+                    <div style="background: #f0f9ff; padding: 20px; border-radius: 12px; border: 1px solid #bae6fd; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 1.1rem; color: #0369a1;"><strong>Credits Added:</strong> {payload.credits} tokens</p>
+                        <p style="margin: 5px 0 0; color: #0c4a6e;"><strong>New Balance:</strong> {result["new_credits"]} tokens</p>
+                        <p style="margin: 15px 0 0; font-size: 0.9rem; color: #64748b;"><strong>Reason:</strong> {payload.reason}</p>
+                    </div>
+                    <p>Please find the official allocation brief attached as a PDF for your records.</p>
+                    <p style="font-size: 0.9rem; color: #64748b; margin-top: 30px;">Best Regards,<br>Surefact Intelligence Team</p>
+                </div>
+                """
+                
+                # Send Email
+                await send_email_with_attachment(
+                    to_email=user_email,
+                    subject=f"Surefact Allocation: +{payload.credits} Research Credits",
+                    html_content=html_body,
+                    file_bytes=pdf_bytes,
+                    filename=f"Credit_Allocation_{user_id[:8]}.pdf"
+                )
+        except Exception as ee:
+            print(f"⚠️ Email/PDF failed for credit grant: {ee}")
+        
+        return result
+    except Exception as e:
+        print(f"Error granting credits: {e}")
+        if isinstance(e, HTTPException): raise e
         raise HTTPException(status_code=500, detail=str(e))
 
 # ── REFUND MANAGEMENT ──

@@ -985,6 +985,16 @@
                 <ul id="modal-history" style="margin-top: 10px; list-style: none; display: flex; flex-direction: column; gap: 8px;">
                     <!-- JS populated -->
                 </ul>
+
+                <div class="glass-panel" style="margin-top: 20px; border-color: var(--accent); background: rgba(56, 189, 248, 0.02);">
+                    <h4 style="font-family: 'Outfit', sans-serif; color: var(--accent); margin-bottom: 10px;">🎁 Grant Manual Credits</h4>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">Add credits directly to this user account. They will receive a real-time notification.</p>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="grant-credits-amount" class="form-input" style="margin-bottom:0; width: 100px;" placeholder="Amount">
+                        <input type="text" id="grant-credits-reason" class="form-input" style="margin-bottom:0; flex: 1;" placeholder="Reason (e.g. Compensation)">
+                        <button type="button" class="btn btn-primary" onclick="executeGrantCredits()">Grant</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1064,8 +1074,9 @@
         let currentAdminEmail = (localStorage.getItem("admin_email") || "").trim();
         
         // --- SMART ROUTING: Target port 8000 if frontend is on 5500 ---
-        const API_BASE = window.location.port === "5500" ? "http://localhost:8000" : "";
-        console.log("Using API Base:", API_BASE || "(Root Relative)");
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const API_BASE = isLocal ? "http://127.0.0.1:8000" : "https://YOUR-RENDER-APP.onrender.com"; // TODO: Replace with Render URL
+        console.log("Using API Base:", API_BASE);
 
         // Compliance & Tickets
         let currentTicketId = null;
@@ -1354,13 +1365,13 @@
             histUl.innerHTML = "<p style='color:var(--muted); font-size: 0.8rem;'>Loading tracking data...</p>";
             
             try {
-            const res = await fetch(`${API_BASE}/admin-api/users/${id}/history?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await fetch(`${API_BASE}/admin-api/users/${id}/history?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const dat = await res.json();
                 
-                document.getElementById('history-limit').innerText = dat.limit;
-                document.getElementById('history-count').innerText = dat.history.length;
+                document.getElementById('history-limit').innerText = dat.limit || 100;
+                document.getElementById('history-count').innerText = dat.history ? dat.history.length : 0;
                 
-                if(dat.history.length === 0) {
+                if(!dat.history || dat.history.length === 0) {
                     histUl.innerHTML = "<li style='color:var(--muted); font-size: 0.8rem;'>No queries logged for this user.</li>";
                 } else {
                     histUl.innerHTML = dat.history.map(h => `
@@ -1373,6 +1384,42 @@
                 }
             } catch(e) {
                 histUl.innerHTML = "<li style='color:var(--danger);'>Failed to fetch history</li>";
+            }
+        }
+
+        async function executeGrantCredits() {
+            const userId = document.getElementById('modal-id').innerText;
+            const amountInput = document.getElementById('grant-credits-amount');
+            const reasonInput = document.getElementById('grant-credits-reason');
+            const amount = parseInt(amountInput.value);
+            const reason = reasonInput.value || "Admin Bonus";
+            
+            if (!amount || amount <= 0) { 
+                alert("Please enter a valid credit amount."); 
+                return; 
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin-api/users/${userId}/grant-credits`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ credits: amount, reason: reason })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Success! User now has ${data.new_credits} credits.`);
+                    document.getElementById('modal-credits').innerText = data.new_credits;
+                    amountInput.value = "";
+                    reasonInput.value = "";
+                    loadAllUsers(); // Refresh table
+                } else {
+                    alert("Error: " + (data.detail || "Failed to grant credits"));
+                }
+            } catch (e) { 
+                alert("Request failed: " + e.message); 
             }
         }
 

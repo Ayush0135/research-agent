@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/static/modern-ui.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
   </script>
@@ -2002,7 +2003,8 @@
   </div>
 
   <script>
-    const API = window.location.origin;
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const API = isLocal ? "http://127.0.0.1:8000" : "https://YOUR-RENDER-APP.onrender.com"; // TODO: Replace with your Render URL
     let authToken = null, currentUser = null, activeWs = null, isResearching = false;
     let selectedPlan = null, selectedAmount = 0;
 
@@ -2538,8 +2540,8 @@
       }
       else if (format === 'docx') {
         // Very basic DOCX fallback: HTML encapsulated in Word XML structure
-        const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body>";
-        const footer = "</body></html>";
+        const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></" + "head><body" + ">";
+        const footer = "</" + "body></" + "html>";
         const content = document.getElementById('result-content').innerHTML;
         saveBlob(header + content + footer, `${filenameBase}.doc`, 'application/msword');
       }
@@ -2576,109 +2578,35 @@
     function fillHint(t) { document.getElementById('query-input').value = t; document.getElementById('query-input').focus(); }
     function mdToHtml(raw) {
       if (!raw) return '';
-      let t = raw;
-
-      // ── Mermaid Blocks & Code Blocks ─────────────────────────────────────────
-      // Match ```mermaid ... ```
-      t = t.replace(/```mermaid([\s\S]+?)```/g, (_, code) => {
-        // Aggressive clean: remove [Sources], **Bold**, (Parens in labels), and [Brackets in labels]
-        const clean = code
-          .replace(/\[Source \d+\]/gi, '')
-          .replace(/\*\*\//g, '')
-          .replace(/\[/g, '(') // Mermaid doesn't like [ ] inside nodes if not special
-          .replace(/\]/g, ')')
-          .trim();
+      
+      // 1. Pre-process Mermaid Blocks
+      let t = raw.replace(/```mermaid([\s\S]+?)```/g, (_, code) => {
+        const clean = code.replace(/\[Source \d+\]/gi, '').trim();
         return `<div class="mermaid">${clean}</div>`;
       });
-      // Other code blocks
-      t = t.replace(/```(\w+)?([\s\S]+?)```/g, '<pre><code>$2</code></pre>');
 
-      // ── Escape HTML (process before adding tags)
-      const esc2 = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-      // ── Tables ──────────────────────────────────────────────────────────────
-      // Match markdown table blocks (requires at least one | per row to avoid catastrophic backtracking)
-      t = t.replace(/(?:^|\n)([^\n]+\|[^\n]*)\n([-:\s\|]+)\n((?:[^\n]+\|[^\n]*(?:\n|$))+)/g, (match, header, sep, body) => {
-        const parseRow = (row) => {
-          let r = row.trim();
-          if (r.startsWith('|')) r = r.slice(1);
-          if (r.endsWith('|')) r = r.slice(0, -1);
-          return r.split('|').map(c => c.trim());
-        };
-        const headers = parseRow(header).map(c => `<th>${esc2(c)}</th>`).join('');
-        const rows = body.trim().split('\n').map(row => {
-          const cells = parseRow(row);
-          return '<tr>' + cells.map(c => `<td>${inlineFormat(c)}</td>`).join('') + '</tr>';
-        }).join('');
-        return `\n<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>\n`;
+      // 2. Configure marked for professional rendering
+      marked.setOptions({
+        gfm: true,
+        breaks: true,
+        headerIds: false,
+        mangle: false
       });
 
-      // ── Process line by line ─────────────────────────────────────────────────
-      const lines = t.split('\n');
-      const out = [];
-      let inUl = false, inOl = false;
+      // 3. Parse with marked
+      let html = marked.parse(t);
 
-      for (let i = 0; i < lines.length; i++) {
-        let line = lines[i];
+      // 4. Post-process styling for Citations and Branded Elements
+      html = html
+        // Branded Citations [Source X]
+        .replace(/\[Source (\d+)\]/gi, '<span class="citation">S$1</span>')
+        // Professional Image Wrapping
+        .replace(/<img src="([^"]+)" alt="([^"]+)">/g, (match, src, alt) => {
+          return `<div class="result-img-wrap"><img src="${src}" alt="${alt}"><p>🖼 ${alt}</p></div>`;
+        });
 
-        // Skip already-processed table HTML or Mermaid/Code blocks
-        if (line.startsWith('<table') || line.startsWith('</table') || line.startsWith('<thead') || line.startsWith('<tbody') || line.startsWith('<tr') || line.startsWith('<th') || line.startsWith('<td') || line.startsWith('<div class="mermaid"') || line.startsWith('<pre')) {
-          if (inUl) { out.push('</ul>'); inUl = false; }
-          if (inOl) { out.push('</ol>'); inOl = false; }
-          out.push(line); continue;
-        }
-
-        // Headings
-        if (/^#### /.test(line)) { closeList(); out.push(`<h4>${inlineFormat(line.slice(5))}</h4>`); continue; }
-        if (/^### /.test(line)) { closeList(); out.push(`<h3>${inlineFormat(line.slice(4))}</h3>`); continue; }
-        if (/^## /.test(line)) { closeList(); out.push(`<h2>${inlineFormat(line.slice(3))}</h2>`); continue; }
-        if (/^# /.test(line)) { closeList(); out.push(`<h1>${inlineFormat(line.slice(2))}</h1>`); continue; }
-
-        // HR
-        if (/^---+$/.test(line.trim())) { closeList(); out.push('<hr/>'); continue; }
-
-        // Blockquote
-        if (/^> /.test(line)) { closeList(); out.push(`<blockquote>${inlineFormat(line.slice(2))}</blockquote>`); continue; }
-
-        // Ordered list
-        const olMatch = line.match(/^(\d+)\. (.+)/);
-        if (olMatch) {
-          if (inUl) { out.push('</ul>'); inUl = false; }
-          if (!inOl) { out.push('<ol>'); inOl = true; }
-          out.push(`<li>${inlineFormat(olMatch[2])}</li>`);
-          continue;
-        }
-
-        // Unordered list (- or * or •)
-        const ulMatch = line.match(/^[-*•] (.+)/);
-        if (ulMatch) {
-          if (inOl) { out.push('</ol>'); inOl = false; }
-          if (!inUl) { out.push('<ul>'); inUl = true; }
-          out.push(`<li>${inlineFormat(ulMatch[1])}</li>`);
-          continue;
-        }
-
-        // Close lists on non-list lines
-        closeList();
-
-        // Empty line → paragraph break
-        if (!line.trim()) { out.push('<br/>'); continue; }
-
-        // Regular paragraph (if not inside an already processed tag)
-        if (line.startsWith('<')) {
-          out.push(line);
-        } else {
-          out.push(`<p>${inlineFormat(line)}</p>`);
-        }
-      }
-
-      closeList();
-      return out.join('\n');
-
-      function closeList() {
-        if (inUl) { out.push('</ul>'); inUl = false; }
-        if (inOl) { out.push('</ol>'); inOl = false; }
-      }
+      return html;
+    }
 
       function inlineFormat(s) {
         return s
