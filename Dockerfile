@@ -27,4 +27,4 @@ EXPOSE 8000
 # Start the FastAPI server with uvicorn
 # We use a shell-form CMD to allow environment variable expansion (like $PORT)
 # Set workers back to 2 since RAM is no longer an issue with externalized models
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
