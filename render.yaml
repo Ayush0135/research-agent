@@ -2,6 +2,7 @@ services:
   - type: web
     name: research-agent-api
     runtime: docker
+    repo: https://github.com/Ayush0135/research-agent
     dockerfilePath: ./Dockerfile
     plan: free
     region: oregon
