@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: research-agent-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_URL
+        value: https://aizeiyxmyjfgdmrrrkam.supabase.co
+      - key: SUPABASE_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: UPI_ID
+        value: 9693932656@ptyes
+      - key: UPI_NAME
+        value: Research Agent API
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: SEARCH_ENGINE_ID
+        value: 57f7ee5d76e55489b
+      - key: HF_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        value: 23tec2cs758@vgu.ac.in
+      - key: SMTP_PASS
+        sync: false
